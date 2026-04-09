@@ -1,20 +1,11 @@
 ---
-name: hfv
-description: Use when debugging failures that need systematic root-cause analysis — one hypothesis at a time with manual verification between attempts. Best for issues where the user must verify in a real environment that Claude cannot access directly.
+name: full
+description: "Use when debugging failures that need systematic root-cause analysis — one hypothesis at a time with manual verification between attempts. Best for issues where the user must verify in a real environment that Claude cannot access directly."
 ---
 
-# HFV — Hypothesis-Fix-Verify
+# HFV Full Cycle — Hypothesis-Fix-Verify
 
 Systematic debugging workflow: one hypothesis, one fix, one verification — then stop.
-
-## Sub-Commands
-
-| Command | Purpose |
-|---------|---------|
-| `/hfv:full` | Run the full hypothesis -> fix -> verify cycle |
-| `/hfv:hypothesis` | Deep exploration and hypothesis formation only (no code changes) |
-| `/hfv:fix` | Implement a fix for an accepted hypothesis (surgical code changes + logging) |
-| `/hfv:archive` | Archive a verified fix as successfully resolved |
 
 ## When to Use
 

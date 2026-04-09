@@ -1,6 +1,6 @@
 # Claude Code Custom Skills
 
-A collection of custom skills and slash commands for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+A collection of custom skills, plugins, and slash commands for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
 ## Skills
 
@@ -22,16 +22,16 @@ Disciplined debugging workflow: one hypothesis, one fix, one verification — th
 /hypothesis-fix-verify TLS handshake failing after JDK upgrade
 ```
 
-### `hfv` — Systematic Debugging (Model-Invoked Skill)
+### `hfv` — Systematic Debugging (Plugin)
 
-The same HFV workflow, but auto-triggered by Claude when it detects a debugging scenario that fits. Also supports sub-commands:
+A plugin with sub-skills for each phase of the HFV debugging workflow. Auto-triggered by Claude when it detects a debugging scenario, or invoked explicitly with colon notation:
 
 | Command | Purpose |
 |---------|---------|
-| `/hfv:full` | Run the full hypothesis -> fix -> verify cycle |
-| `/hfv:hypothesis` | Deep exploration and hypothesis formation only (no code changes) |
-| `/hfv:fix` | Implement a fix for an accepted hypothesis |
-| `/hfv:archive` | Archive a verified fix as successfully resolved |
+| `hfv:full` | Run the full hypothesis -> fix -> verify cycle |
+| `hfv:hypothesis` | Deep exploration and hypothesis formation only (no code changes) |
+| `hfv:fix` | Implement a fix for an accepted hypothesis |
+| `hfv:archive` | Archive a verified fix as successfully resolved |
 
 Best for:
 - Failures that can't be reproduced locally
@@ -41,30 +41,31 @@ Best for:
 
 ## Installation
 
-### Option 1: Symlink (recommended)
+### Slash commands
 
 Symlink into your Claude Code config so updates to this repo are picked up automatically:
 
 ```bash
-# Slash commands
 ln -s "$(pwd)/commands/commit.md" ~/.claude/commands/commit.md
 ln -s "$(pwd)/commands/hypothesis-fix-verify.md" ~/.claude/commands/hypothesis-fix-verify.md
-
-# Model-invoked skills
-ln -s "$(pwd)/skills/hfv" ~/.claude/skills/hfv
 ```
 
-### Option 2: Copy
+### HFV plugin
 
-Copy the files directly:
+The `hfv` skill is a Claude Code plugin. Register it by adding an entry to the `plugins` object in `~/.claude/plugins/installed_plugins.json`:
 
-```bash
-# Slash commands
-cp commands/*.md ~/.claude/commands/
-
-# Model-invoked skills
-cp -r skills/* ~/.claude/skills/
+```json
+"hfv@local": [
+  {
+    "scope": "user",
+    "installPath": "<absolute-path-to-this-repo>/skills/hfv",
+    "version": "1.0.0",
+    "installedAt": "<current-ISO-date>"
+  }
+]
 ```
+
+Then restart Claude Code. The `hfv:full`, `hfv:hypothesis`, `hfv:fix`, and `hfv:archive` skills will be available.
 
 ## Structure
 
@@ -73,19 +74,27 @@ claude-skills/
 ├── commands/                              # Slash commands (user-invoked with /<name>)
 │   ├── commit.md                          # /commit
 │   └── hypothesis-fix-verify.md           # /hypothesis-fix-verify
-└── skills/                                # Model-invoked skills (auto-triggered by Claude)
-    └── hfv/
-        └── SKILL.md                       # Auto-triggers + sub-commands
+└── skills/
+    └── hfv/                               # Plugin (colon notation: hfv:<skill>)
+        ├── package.json                   # Plugin name: "hfv"
+        ├── .claude-plugin/
+        │   └── plugin.json                # Plugin metadata
+        └── skills/
+            ├── full/SKILL.md              # hfv:full — complete cycle
+            ├── hypothesis/SKILL.md        # hfv:hypothesis — explore + hypothesize only
+            ├── fix/SKILL.md               # hfv:fix — implement fix + stop
+            └── archive/SKILL.md           # hfv:archive — archive resolved issue
 ```
 
-**Commands vs Skills:**
+**Commands vs Plugins:**
 
-| | Commands (`commands/`) | Skills (`skills/`) |
+| | Commands (`commands/`) | Plugins (`skills/<name>/`) |
 |---|---|---|
-| **Trigger** | User types `/<name>` | Claude auto-triggers based on task context |
-| **Format** | Single `.md` file | `<name>/SKILL.md` directory |
-| **Key fields** | `description`, `allowed-tools`, `argument-hint` | `name`, `description` |
-| **Use case** | Explicit workflows you want on demand | Behaviors Claude should adopt automatically |
+| **Trigger** | User types `/<name>` | Claude auto-triggers or user types `<plugin>:<skill>` |
+| **Format** | Single `.md` file | Plugin directory with `package.json` + `skills/` subdirectories |
+| **Sub-commands** | No | Yes, via colon notation (`hfv:full`, `hfv:fix`) |
+| **Key fields** | `description`, `allowed-tools`, `argument-hint` | `name`, `description` in each SKILL.md |
+| **Use case** | Explicit workflows you want on demand | Structured workflows with distinct phases |
 
 ## Adding New Skills
 
@@ -103,9 +112,21 @@ argument-hint: <required> [optional]
 Instructions for Claude to follow when this command is invoked.
 ```
 
-### Model-invoked skill
+### Plugin with sub-skills
 
-Create `skills/<name>/SKILL.md` with frontmatter:
+Create a plugin directory with the following structure:
+
+```
+skills/<plugin-name>/
+├── package.json                    # { "name": "<plugin-name>", "version": "1.0.0", "type": "module" }
+├── .claude-plugin/
+│   └── plugin.json                 # Plugin metadata (name, description, author, keywords)
+└── skills/
+    └── <skill-name>/
+        └── SKILL.md                # Invoked as <plugin-name>:<skill-name>
+```
+
+Each `SKILL.md` uses frontmatter:
 
 ```yaml
 ---

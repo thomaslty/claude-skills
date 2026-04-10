@@ -100,13 +100,16 @@ digraph hfv {
 
   explore [label="EXPLORE\nGather evidence, read logs/code"];
   hypothesize [label="HYPOTHESIZE\nForm exactly ONE hypothesis\nWrite hypothesis file"];
+  validate [label="VALIDATE\nTwo parallel sub-agents:\n1. Code review of hypothesis\n2. Online research validation"];
   fix [label="FIX\nMinimal targeted change\n+ diagnostic logging"];
   stop [label="STOP\nUser verifies manually" shape=doublecircle];
   evaluate [label="EVALUATE\nUpdate hypothesis file with result"];
   archive [label="ARCHIVE\nMove to archive/" shape=doublecircle];
 
   explore -> hypothesize;
-  hypothesize -> fix;
+  hypothesize -> validate;
+  validate -> fix [label="hypothesis holds"];
+  validate -> explore [label="contradicted — revise"];
   fix -> stop;
   stop -> evaluate [label="user reports results"];
   evaluate -> explore [label="denied / partial"];
@@ -134,6 +137,29 @@ Form exactly ONE hypothesis. Write it to `hfv/<issue>/hypothesis-<desc>.md`.
 1. Highest confidence first
 2. Among equal confidence, easiest to verify first
 3. Among equal ease, smallest blast radius first
+
+### VALIDATE
+
+Before proceeding to fix, run a quick pre-filter using two parallel sub-agents to catch obviously wrong hypotheses early.
+
+Dispatch both agents simultaneously using the Agent tool:
+
+**Agent 1 — Code Review:**
+> Re-read the hypothesis I just formed: [hypothesis summary]. Trace the relevant code paths
+> in [files] and look for: (1) evidence that contradicts this hypothesis, (2) assumptions
+> that don't hold in the actual code, (3) a simpler explanation I may have missed. Report
+> what you find in under 200 words.
+
+**Agent 2 — Online Research:**
+> Search online for: [error/symptom] caused by [hypothesized cause]. Check known issues,
+> official docs, changelogs, and community discussions. Does external evidence support or
+> contradict this hypothesis? Report in under 200 words.
+
+**After both return:**
+- Either raises a concrete contradiction → incorporate into the hypothesis's "Contradicting"
+  evidence, reconsider confidence level, and revise if warranted. If contradicted, return to EXPLORE.
+- Both support → proceed to FIX with increased confidence
+- Inconclusive → note that and proceed to FIX as-is
 
 ### FIX
 

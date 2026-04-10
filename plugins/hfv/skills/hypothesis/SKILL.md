@@ -71,13 +71,39 @@ _To be filled after user verification_
 2. Among equal confidence, easiest to verify first
 3. Among equal ease, smallest blast radius first
 
+## Phase 3: VALIDATE
+
+Before presenting the hypothesis, run a quick pre-filter using two parallel sub-agents to catch obviously wrong hypotheses early.
+
+Dispatch both agents simultaneously using the Agent tool:
+
+**Agent 1 — Code Review:**
+> Re-read the hypothesis I just formed: [hypothesis summary]. Trace the relevant code paths
+> in [files] and look for: (1) evidence that contradicts this hypothesis, (2) assumptions
+> that don't hold in the actual code, (3) a simpler explanation I may have missed. Report
+> what you find in under 200 words.
+
+**Agent 2 — Online Research:**
+> Search online for: [error/symptom] caused by [hypothesized cause]. Check known issues,
+> official docs, changelogs, and community discussions. Does external evidence support or
+> contradict this hypothesis? Report in under 200 words.
+
+**After both return:**
+- Either raises a concrete contradiction → incorporate into the hypothesis's "Contradicting"
+  evidence, reconsider confidence level, and revise if warranted
+- Both support → proceed with increased confidence
+- Inconclusive → note that and proceed as-is
+
+This is a lightweight sanity check, not a deep investigation. Keep it fast.
+
 ## Output
 
 Present to the user:
 1. Evidence summary
 2. The hypothesis with confidence level
-3. Proposed fix approach (described, not implemented)
-4. Ask: "Should I proceed with `hfv:fix` to implement this?"
+3. Validation results (what the two agents found)
+4. Proposed fix approach (described, not implemented)
+5. Ask: "Should I proceed with `hfv:fix` to implement this?"
 
 ## Red Flags
 

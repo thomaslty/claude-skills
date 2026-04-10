@@ -10,11 +10,13 @@ Skills live in `skills/`. Copy to install:
 
 ```bash
 cp -r skills/review ~/.claude/skills/review
+cp -r skills/no-code-change ~/.claude/skills/no-code-change
 ```
 
 | Skill | Description |
 |-------|-------------|
-| [/review](skills/review/) | Show-first workflow — gather, summarize, and present before making any changes |
+| [/review](skills/review/) | Comprehensive code review with 6 parallel sub-agents (quality, reuse, truthfulness, efficiency, security, best practices) |
+| [/no-code-change](skills/no-code-change/) | Show-first workflow — gather, summarize, and present before making any changes |
 
 ### Commands
 
@@ -39,7 +41,8 @@ cp -r commands/hfv ~/.claude/commands/hfv
 ```
 claude-skills/
 ├── skills/                # Skills (/<name>)
-│   └── review/
+│   ├── review/
+│   └── no-code-change/
 └── commands/              # Slash commands (/<name> or /<group>:<name>)
     ├── commit.md
     └── hfv/

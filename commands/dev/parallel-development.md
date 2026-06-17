@@ -67,9 +67,10 @@ After all sub-agents report done, the main session:
 
 1. Merges each worktree branch back into the current working branch.
 2. Resolves any conflicts (the main session has the full context).
-3. Removes each worktree and its branch after a successful merge (`git worktree remove`).
+3. Archives each merged change with `opsx:archive` (or `openspec-archive-change`), one at a time.
+4. Removes each worktree and its branch after a successful merge (`git worktree remove`).
 
-Sub-agents NEVER merge. Cleanup happens only after the merge succeeds.
+Sub-agents NEVER merge and NEVER archive — archiving touches the shared spec baseline, so doing it in parallel worktrees would conflict. Merge, archive, and cleanup all happen in the main session, sequentially, only after the merge succeeds.
 
 ## Quick Reference
 
@@ -80,6 +81,7 @@ Sub-agents NEVER merge. Cleanup happens only after the merge succeeds.
 | Implement | Sub-agents | Parallel, in worktree |
 | Commit | Sub-agents | On worktree branch |
 | Merge | Main | Into working branch |
+| Archive | Main | `opsx:archive` each change |
 | Cleanup | Main | Remove worktrees |
 
 ## Cross-References
@@ -87,4 +89,4 @@ Sub-agents NEVER merge. Cleanup happens only after the merge succeeds.
 - Methodology each sub-agent follows → `dev:development-guideline`
 - Worktree mechanics → superpowers:using-git-worktrees
 - Parallel dispatch → superpowers:dispatching-parallel-agents
-- Proposals → `opsx:propose`; implementing tasks → `opsx:apply`
+- Proposals → `opsx:propose`; implementing tasks → `opsx:apply`; archiving → `opsx:archive`

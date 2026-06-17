@@ -31,10 +31,17 @@ Use at the start of development work, and again before claiming completion.
 | Build | Backend | TDD | Failing test → code → green |
 | Build | Frontend | VDD | UI built, seen on screen |
 | Verify | All | Visual confirm | Seen working in real app |
+| Finalize | All | Archive | Change archived |
 
 ### 1. Proposal-driven planning
 
-No code before a proposal. Use `opsx:propose` (or `openspec-propose`) to create the change and its artifacts (proposal, design, specs, tasks). Implement with `opsx:apply`. If more than one proposal will be created in this session, use `dev:parallel-development`.
+No code before a proposal. The lifecycle is **propose → apply → archive**:
+
+1. **Propose** — use `opsx:propose` (or `openspec-propose`) to create the change and its artifacts (proposal, design, specs, tasks).
+2. **Apply** — implement with `opsx:apply`.
+3. **Archive** — once the change is fully implemented and visually confirmed, finalize it with `opsx:archive` (or `openspec-archive-change`) to fold its specs into the baseline and move the change out of the active set.
+
+If more than one proposal will be created in this session, use `dev:parallel-development`.
 
 ### 2. Backend — Test-Driven Development
 
@@ -85,7 +92,7 @@ For UI: screenshot via chrome-devtools (`take_screenshot`) or playwright (`brows
 ## Cross-References
 
 - Multiple proposals in one session → `dev:parallel-development`
-- Proposals / changes → `opsx:propose`, `opsx:apply`
+- Proposals / changes → `opsx:propose`, `opsx:apply`, `opsx:archive`
 - Backend tests → superpowers:test-driven-development
 - Frontend build quality → frontend-design
 - Driving / screenshotting the UI → chrome-devtools-mcp:chrome-devtools, playwright

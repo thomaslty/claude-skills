@@ -53,7 +53,9 @@ Write the failing test first, watch it fail (RED), write minimal code to pass (G
 
 Build the interface, render it, and iterate against what you actually see — not against assumptions.
 
-**REQUIRED SUB-SKILL:** Use frontend-design for build quality. Drive the real UI with the chrome-devtools or playwright MCP tools and screenshot it.
+**REQUIRED SUB-SKILL:** Use frontend-design for build quality. Drive the real UI with the **chrome-devtools MCP in headed mode** — the default and preferred tool for all visual testing. Reach for playwright only when chrome-devtools cannot do the job.
+
+**Headed mode is the default, not an escape hatch.** chrome-devtools drives a real headed Chrome you (and the user) can watch: its a11y-tree snapshots (`take_snapshot`) give direct element control and state verification without a screenshot+read round-trip per action. Use text snapshots to iterate; reserve `take_screenshot` for visual design checks and for the final visual-confirmation evidence.
 
 ## The Visual-Confirmation Mandate (non-negotiable)
 
@@ -66,7 +68,7 @@ Before any feature is "done" or any bug is "fixed", you MUST:
 3. Capture visual evidence: a screenshot of the UI for frontend; the real rendered output/response for backend.
 4. Confirm the evidence shows the expected behavior, then say so plainly with the evidence.
 
-For UI: screenshot via chrome-devtools (`take_screenshot`) or playwright (`browser_take_screenshot`). For backend with no UI: exercise the real running endpoint/flow and show the actual response — not just a unit-test assertion.
+For UI: screenshot via chrome-devtools (`take_screenshot`) driving headed Chrome — the preferred path (playwright `browser_take_screenshot` only as a fallback). For backend with no UI: exercise the real running endpoint/flow and show the actual response — not just a unit-test assertion.
 
 ### Red Flags — STOP, you are about to skip visual confirmation
 
@@ -95,5 +97,5 @@ For UI: screenshot via chrome-devtools (`take_screenshot`) or playwright (`brows
 - Proposals / changes → `opsx:propose`, `opsx:apply`, `opsx:archive`
 - Backend tests → superpowers:test-driven-development
 - Frontend build quality → frontend-design
-- Driving / screenshotting the UI → chrome-devtools-mcp:chrome-devtools, playwright
+- Driving / screenshotting the UI → chrome-devtools-mcp:chrome-devtools (headed, preferred); playwright as fallback
 - Running the app / confirming behavior → `run`, `verify`

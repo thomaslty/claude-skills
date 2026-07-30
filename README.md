@@ -28,6 +28,7 @@ Slash commands live in `commands/`. Copy to install:
 
 ```bash
 cp commands/commit.md ~/.claude/commands/commit.md
+cp commands/fable-design-claude-execute.md ~/.claude/commands/fable-design-claude-execute.md
 cp -r commands/dev ~/.claude/commands/dev
 cp -r commands/hfv ~/.claude/commands/hfv
 ```
@@ -35,6 +36,7 @@ cp -r commands/hfv ~/.claude/commands/hfv
 | Command | Description |
 |---------|-------------|
 | `/commit` | Git commits without the Co-Authored-By trailer |
+| `/fable-design-claude-execute` | Fable 5 designs in the main session; Claude sub-agents execute the code |
 
 #### `dev:` — development lifecycle and code review
 
@@ -72,6 +74,7 @@ claude-skills/
 │   └── review/
 └── commands/              # Slash commands (/<name> or /<group>:<name>)
     ├── commit.md
+    ├── fable-design-claude-execute.md
     ├── dev/
     │   ├── development-guideline.md
     │   ├── parallel-development.md

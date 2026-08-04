@@ -27,6 +27,12 @@ Each review tier defaults to the **diff/staged/PR**. Pass `--repo` (or a path) t
 | `/dev:security-review` | vulnerabilities | injection, secrets, auth, CVEs, data exposure |
 | `/dev:full-review` | everything | all seven aspects, one synthesized report |
 
+## Docs
+
+| Command | What it does |
+|---|---|
+| `/dev:create-readme` | Write or rewrite a README: 9 sections, ≤5 benefit-framed features, config table |
+
 ## Debt
 
 | Command | What it does |

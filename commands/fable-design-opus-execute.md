@@ -1,13 +1,13 @@
 ---
-description: "Split-brain workflow: Fable 5 designs in the main session, Claude sub-agents execute the code. Use when you want Fable's planning with Claude's implementation. Triggers on /fable-design-claude-execute, 'fable designs claude executes', 'plan with fable build with claude'."
+description: "Split-brain workflow: Fable 5 designs in the main session, Opus 5 sub-agents execute the code. Use when you want Fable's planning with Opus's implementation. Triggers on /fable-design-opus-execute, 'fable designs opus executes', 'plan with fable build with opus'."
 argument-hint: "[task description] [--parallel]"
 ---
 
-# Fable Designs, Claude Executes
+# Fable Designs, Opus Executes
 
 ## Overview
 
-Two models, two jobs. The main session (**Fable 5**) owns thinking: explore, decide, write the plan. Sub-agents (**Claude**) own typing: edit files, run tests, report back. Fable never writes production code; Claude never re-decides the design.
+Two models, two jobs. The main session (**Fable 5**) owns thinking: explore, decide, write the plan. Sub-agents (**Opus 5**) own typing: edit files, run tests, report back. Fable never writes production code; Opus never re-decides the design.
 
 **Core principle:** the design must survive the handover in writing. A non-fork sub-agent starts with an EMPTY context — it sees only the prompt you give it. Anything Fable worked out and did not write down is lost.
 
@@ -18,7 +18,7 @@ Two models, two jobs. The main session (**Fable 5**) owns thinking: explore, dec
 | bare text | The task to design + execute |
 | `--parallel` | Fan out independent chunks |
 
-The executor is **always Opus**. There is no downgrade flag — never substitute Sonnet or Haiku, however mechanical the task looks.
+The executor is **always Opus 5**. There is no downgrade flag — never substitute Sonnet or Haiku, however mechanical the task looks.
 
 ## Phase 0 — Preflight
 
@@ -53,7 +53,7 @@ A brief is complete only if a fresh engineer with no memory of this conversation
 
 Never write "as we discussed", "the approach above", or "the usual pattern" — the executor was not there.
 
-## Phase 3 — Execute (Claude sub-agents)
+## Phase 3 — Execute (Opus sub-agents)
 
 Dispatch with the Agent tool:
 
@@ -95,7 +95,7 @@ With `--parallel`: split into chunks that share no files, dispatch all in ONE me
 | Rule | Why |
 |---|---|
 | Fable writes no prod code | Executor's job |
-| Claude re-designs nothing | Designer's job |
+| Opus re-designs nothing | Designer's job |
 | Never `subagent_type: fork` | Drops model override |
 | Executor is always Opus | No downgrades |
 | Brief is self-contained | Sub-agent has no context |

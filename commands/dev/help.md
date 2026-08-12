@@ -27,6 +27,12 @@ Each review tier defaults to the **diff/staged/PR**. Pass `--repo` (or a path) t
 | `/dev:security-review` | vulnerabilities | injection, secrets, auth, CVEs, data exposure |
 | `/dev:full-review` | everything | all seven aspects, one synthesized report |
 
+## Investigate
+
+| Command | What it does |
+|---|---|
+| `/dev:investigate` | Answer an open question: cited evidence → ranked hypotheses → refute the leader (read-only) |
+
 ## Docs
 
 | Command | What it does |
@@ -42,6 +48,7 @@ Each review tier defaults to the **diff/staged/PR**. Pass `--repo` (or a path) t
 ## Notes
 
 - `/dev:code-review` and `/dev:security-review` are the `dev:` multi-agent, apply-on-approval variants — distinct from the harness `/code-review` and `/security-review`.
+- `/dev:investigate` never fixes anything. When it lands a verdict, hand off to `hfv:fix` or `propose`.
 - The review floor is never crossed: validation, error handling, security, and accessibility are never simplified away.
 
 ---

@@ -51,6 +51,7 @@ cp -r commands/hfv ~/.claude/commands/hfv
 | `/dev:security-review` | Review for vulnerabilities (injection, secrets, auth gaps, CVEs, data exposure) |
 | `/dev:simplify` | Review for over-engineering — what to delete or replace with stdlib |
 | `/dev:full-review` | Comprehensive review across every lens in one synthesized report |
+| `/dev:investigate` | Answer an open question — cited evidence, ranked hypotheses, refute the leader (read-only) |
 | `/dev:create-readme` | Write or rewrite a README — 9 sections, at most 5 benefit-framed features, config table with a Required column |
 | `/dev:debt` | Harvest `ponytail:` / TODO / FIXME / HACK markers into a debt ledger |
 
@@ -85,6 +86,7 @@ claude-skills/
     │   ├── security-review.md
     │   ├── simplify.md
     │   ├── full-review.md
+    │   ├── investigate.md
     │   ├── create-readme.md
     │   ├── debt.md
     │   └── help.md

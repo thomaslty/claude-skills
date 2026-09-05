@@ -55,22 +55,44 @@ Then one line: what is done already, what is left. Real numbers — "4 of 11 ste
 
 ## Step 4 — Graph
 
-A mermaid `flowchart LR` (or `TD` when the plan is deep rather than wide) showing dependency, not chronology.
+An ASCII graph inside a plain fenced code block. It must render in a terminal, so no mermaid, no HTML, no images — the TUI shows those as raw text.
 
-```mermaid
-flowchart LR
-    S1[1. Add tenant_config row] --> S3[3. Branch on admin URL]
-    S2[2. Seed dev database] --> S3
-    S3 --> S4[4. Screenshot both logins]
+Layers run left to right. Each column is one dependency level: everything in a column can run at the same time.
+
+```
+LEVEL 0                 LEVEL 1                    LEVEL 2
+
+[x] 1. Add config row --+
+                        +--> [>] 3. Branch admin URL --> [!] 4. Screenshot logins
+[x] 2. Seed dev db -----+
 ```
 
 Rules:
 
-- Node label = step number + short name. Nothing longer than ~30 characters.
-- Draw an arrow ONLY where step B genuinely cannot start until step A lands. Steps with no arrow between them run in parallel — that is the whole value of the graph.
-- Mark anything already finished: `S1[1. Add row]:::done` plus `classDef done fill:#d4edda,stroke:#28a745`.
-- Mark blocked steps: `classDef blocked fill:#f8d7da,stroke:#dc3545`.
-- Below the graph, one line naming the critical path: `Critical path: 1 → 3 → 4 → 7`.
+- Fence it as a plain code block (no language tag). A mermaid fence is forbidden — it renders as unreadable source in the terminal.
+- Node label = status marker + step number + short name. Nothing longer than ~30 characters.
+- Status marker goes in front of every node: `[x]` done, `[>]` in progress, `[ ]` not started, `[!]` blocked.
+- Draw an arrow ONLY where step B genuinely cannot start until step A lands. Steps in the same column with no arrow between them run in parallel — that is the whole value of the graph.
+- Use ASCII only: `-`, `|`, `+`, `>`. Line up the `-->` arrowheads so columns read straight down.
+- Below the graph, one line naming the critical path: `Critical path: 1 -> 3 -> 4 -> 7`.
+- Add a one-line legend under the graph: `[x] done  [>] now  [ ] next  [!] blocked`.
+
+When the plan is deep rather than wide, or a label will not fit the terminal width, stack it top to bottom instead:
+
+```
+[x] 1. Add config row
+[x] 2. Seed dev db
+        |
+        v
+[>] 3. Branch admin URL
+        |
+        v
+[!] 4. Screenshot logins
+```
+
+Steps listed together with no arrow between them run in parallel.
+
+Keep the whole graph under 80 columns. If it will not fit, switch to the top-to-bottom form — never let it wrap, a wrapped graph is worse than no graph.
 
 If the plan is a straight line with no parallelism, say so in one line and still draw it — the user asked for the graph.
 
@@ -120,3 +142,4 @@ One line: the single next action, small enough to start now.
 - Never re-open a decision the user already made. If a step says "add a row to `tenant_config`", that is the design — show it, do not counter-propose.
 - Never pad the matrix with rows that are not real work.
 - Never replace the graph or the matrix with a bullet list.
+- Never draw the graph as mermaid, HTML, or an image. The terminal cannot render them.

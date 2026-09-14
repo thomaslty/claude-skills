@@ -1,6 +1,6 @@
 ---
 name: show-plan
-description: "Show the full current plan — nothing summarised, nothing cut — as a goal line, a dependency graph, a matrix table of every step, and a worked example per step. Triggers on 'show me the plan', 'show the full plan', 'what's the plan', 'plan with graph and matrix', or /show-plan. Strictly read-only: changes no file, runs no state-changing command."
+description: "Show the full current plan — nothing summarised, nothing cut — as a goal line, a box flow diagram, a matrix table of every step, and point-form detail per row. Triggers on 'show me the plan', 'show the full plan', 'what's the plan', 'plan with graph and matrix', or /show-plan. Strictly read-only: changes no file, runs no state-changing command."
 allowed-tools: Read, Glob, Grep, Bash(git log:*), Bash(git status:*), Bash(git diff:*), Bash(ls:*), Bash(cat:*)
 ---
 
@@ -13,9 +13,9 @@ Displays the plan that is already in play. It does not invent one, does not refi
 The output is always the same four blocks, in this order:
 
 1. **Goal** — one sentence.
-2. **Graph** — how the steps depend on each other.
+2. **Graph** — a flow diagram of boxes joined by arrows.
 3. **Matrix** — every step as a row.
-4. **Detail** — one worked example per row.
+4. **Detail** — point form, one block per row.
 
 ## HARD GATE — read only
 
@@ -45,7 +45,7 @@ If there is no plan anywhere, say exactly that and stop. Do not draft one.
 
 Show every step. No "…and 4 more", no "the rest follow the same pattern", no collapsing similar steps into one row.
 
-If the plan has 23 steps, the matrix has 23 rows. A long plan is the reason the user asked.
+If the plan has 23 steps, the graph has 23 boxes and the matrix has 23 rows. A long plan is the reason the user asked.
 
 ## Step 3 — Goal
 
@@ -55,46 +55,185 @@ Then one line: what is done already, what is left. Real numbers — "4 of 11 ste
 
 ## Step 4 — Graph
 
-An ASCII graph inside a plain fenced code block. It must render in a terminal, so no mermaid, no HTML, no images — the TUI shows those as raw text.
+**It is a flow diagram.** Boxes joined by arrows, showing what feeds what. Not a grouped list of boxes. Not a one-line label per step.
 
-Layers run left to right. Each column is one dependency level: everything in a column can run at the same time.
+Put it in a plain fenced code block. It must render in a terminal, so no mermaid, no HTML, no images — the TUI shows those as raw text.
 
-```
-LEVEL 0                 LEVEL 1                    LEVEL 2
+### The box
 
-[x] 1. Add config row --+
-                        +--> [>] 3. Branch admin URL --> [!] 4. Screenshot logins
-[x] 2. Seed dev db -----+
-```
-
-Rules:
-
-- Fence it as a plain code block (no language tag). A mermaid fence is forbidden — it renders as unreadable source in the terminal.
-- Node label = status marker + step number + short name. Nothing longer than ~30 characters.
-- Status marker goes in front of every node: `[x]` done, `[>]` in progress, `[ ]` not started, `[!]` blocked.
-- Draw an arrow ONLY where step B genuinely cannot start until step A lands. Steps in the same column with no arrow between them run in parallel — that is the whole value of the graph.
-- Use ASCII only: `-`, `|`, `+`, `>`. Line up the `-->` arrowheads so columns read straight down.
-- Below the graph, one line naming the critical path: `Critical path: 1 -> 3 -> 4 -> 7`.
-- Add a one-line legend under the graph: `[x] done  [>] now  [ ] next  [!] blocked`.
-
-When the plan is deep rather than wide, or a label will not fit the terminal width, stack it top to bottom instead:
+Three lines, fixed width, always the same shape:
 
 ```
-[x] 1. Add config row
-[x] 2. Seed dev db
-        |
-        v
-[>] 3. Branch admin URL
-        |
-        v
-[!] 4. Screenshot logins
+┌────────────────────┐
+│ [!] 1  Rebase dev  │   line 1: marker + number + short name
+│  107 behind dev    │   line 2: the one real anchor
+│  30 min - YOU run  │   line 3: effort + who runs it
+└──────────┬─────────┘   bottom edge carries the exit when an arrow leaves
+           │
+           ▼
 ```
 
-Steps listed together with no arrow between them run in parallel.
+| Rule | Value |
+|---|---|
+| Inner width | fixed, 20 chars |
+| Lines inside | exactly 3 |
+| Boxes side by side | max 3 |
+| Whole graph | under 80 columns |
 
-Keep the whole graph under 80 columns. If it will not fit, switch to the top-to-bottom form — never let it wrap, a wrapped graph is worse than no graph.
+- **Line 1** — status marker, step number, short name. `[x]` done, `[>]` now, `[ ]` next, `[!]` blocked.
+- **Line 2** — a real anchor. `rs.py:622` yes. `the SQL file` no. A number works too: `17/11/4 hits`.
+- **Line 3** — effort in concrete units, plus owner or blocker. `45 min`, `2 h`, `30 min - YOU run`.
 
-If the plan is a straight line with no parallelism, say so in one line and still draw it — the user asked for the graph.
+If a name will not fit 18 characters, shorten the name. Never widen the box.
+
+### Charset — Unicode is the default
+
+```
+┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼ ▼ ► ●
+```
+
+Use ASCII only when the output is going into a file, a PR comment, or somewhere a box font may be missing:
+
+```
++ - | > v *
+```
+
+Never mix the two in one graph.
+
+`▼` and `►` are ambiguous-width — a rare terminal font renders them two columns wide and pushes that line one character right. If the user says the arrows look off, swap those two for `v` and `>` and keep every other Unicode character.
+
+### Arrows are the point
+
+**Every box gets a line drawn into it or out of it.** The only boxes without a line are the ones in the `NO DEPENDENCIES` block.
+
+Never write a shorthand tag in place of a line. `a3` on its own is not an arrow — it is what broke this command before. Draw the line.
+
+The one place a tag helps: a box with a parent far away on the page, where a long line would cross other boxes. Then draw the near parent's line and label the far one `a10` next to the box. Prefer drawing both lines.
+
+### Layout — chains, not levels
+
+Group by **flow**, not by depth. Three kinds of block:
+
+| Block | Holds |
+|---|---|
+| `NO DEPENDENCIES` | steps with no parent and no child |
+| `CHAIN A`, `CHAIN B`, … | one connected run of work, named |
+| `JOIN` | a step several chains feed into |
+
+Name each chain for what it does — `CHAIN A ── the hook rewrite`, not `CHAIN A`.
+
+Chains run down the page. Where one step feeds several, fan out sideways.
+
+Worked example, a real 17-step plan:
+
+```
+NO DEPENDENCIES ── start any of these now, nothing waits on them
+┌────────────────────┐ ┌────────────────────┐ ┌────────────────────┐
+│ [ ] 1  Drop ||true │ │ [ ] 8  Except doc  │ │ [ ] 14 13 floors   │
+│  settings.json:23  │ │  3-inline.md       │ │  checked > 120     │
+│  5 min             │ │  30 min            │ │  2 h               │
+└────────────────────┘ └────────────────────┘ └────────────────────┘
+┌────────────────────┐ ┌────────────────────┐
+│ [ ] 15 Print all   │ │ [ ] 16 Name enums  │
+│  alembic_env:784   │ │  temporal_type 1,2 │
+│  5 min             │ │  10 min            │
+└────────────────────┘ └────────────────────┘
+
+CHAIN A ── the hook rewrite
+┌────────────────────┐
+│ [ ] 2  One scan    │
+│  sh:30-39 drop $1  │
+│  20 min            │
+└──────────┬─────────┘
+           │
+           ├─────────────────────┬──────────────────────┐
+           │                     │                      │
+           ▼                     ▼                      ▼
+┌────────────────────┐ ┌────────────────────┐ ┌────────────────────┐
+│ [ ] 3  Del grep -v │ │ [ ] 4  Fix check 6 │ │ [ ] 5  Check 13 v2 │
+│  sh:43-44, 628 fls │ │  sh:59 __init__    │ │  #temp in message  │
+│  5 min             │ │  20 min            │ │  45 min            │
+└────────────────────┘ └────────────────────┘ └──────────┬─────────┘
+       ● ends                 ● ends                     │
+                                                         ▼
+                                              ┌────────────────────┐
+                                              │ [ ] 6  Add check14 │
+                                              │  .sql in apis/     │
+                                              │  30 min            │
+                                              └──────────┬─────────┘
+                                                         │
+                                                         ▼
+                                              ┌────────────────────┐
+                                              │ [ ] 7  Rewrite md  │
+                                              │  14 checks, no arg │
+                                              │  30 min            │
+                                              └──────────┬─────────┘
+                                                         │
+                                                         └───────► 17
+
+CHAIN B ── kill the shared package
+┌────────────────────┐              ┌────────────────────┐
+│ [ ] 9  Restore sql │              │ [ ] 10 Paste 22 py │
+│  21 files          │              │  widgets/*/data/   │
+│  15 min            │              │  half a day        │
+└──────────┬─────────┘              └──────────┬─────────┘
+           │                                   │
+           ▼                                   │
+┌────────────────────┐                         │
+│ [ ] 11 Inline 9 gn │                         │
+│  data_service:44   │                         │
+│  2 h               │                         │
+└──────────┬─────────┘                         │
+           │                                   │
+           └─────────────────┬─────────────────┘
+                             │
+                             ▼
+                  ┌────────────────────┐
+                  │ [ ] 12 Del package │
+                  │  77 classes gone   │
+                  │  5 min             │
+                  └──────────┬─────────┘
+                             │
+                             ▼
+                  ┌────────────────────┐
+                  │ [ ] 13 pyproject   │
+                  │  shared/:124       │
+                  │  2 min             │
+                  └──────────┬─────────┘
+                             │
+                             └───────► 17
+
+JOIN
+                  ┌────────────────────┐
+       7 ────────►│ [ ] 17 Run tiers   │
+      13 ────────►│  floor 6 aspose    │
+                  │  45 min            │
+                  └────────────────────┘
+
+[x] done  [>] now  [ ] next  [!] blocked   ● = chain ends here
+Critical path: 10 ─► 12 ─► 13 ─► 17   (about 5 h)
+Gate: backend is on `dev`, clean. Never commit on dev — you ask for the branch.
+```
+
+Under every graph, three lines: the legend, the critical path with a total time, and any gate.
+
+### Alignment
+
+The arrow must land on the box it points at. Count columns before you draw.
+
+- A box's exit `┬` sits at inner column 11.
+- Side-by-side boxes sit at column 0, 23, 46 — one space between them.
+- A fan bar's `├` lines up with the parent's exit; each `┬` and `┐` lines up with a child's exit column.
+
+A misaligned arrow is worse than no arrow. If you cannot line it up, stack the boxes instead.
+
+### When it will not fit
+
+- More than 3 boxes fanning out: wrap to a second row of boxes under the first, fed by the same bar.
+- A chain deeper than about 10 boxes: cut it and write `└───► continues below` then restart with `CHAIN A (cont.)`.
+- Never let a line wrap. A wrapped graph is worse than no graph.
+
+If the plan is a straight line with no parallelism, say so in one line and still draw the boxes and arrows — the user asked for the graph.
 
 ## Step 5 — Matrix table
 
@@ -116,19 +255,70 @@ Column rules:
 
 Add columns when the plan needs them (`Owner`, `Risk`, `Verify`). Never widen a cell to fit more.
 
-## Step 6 — Detail, one per row
+## Step 6 — Detail, point form
 
-The matrix is an index. On its own it is unreadable — the 30-character cells cannot carry the meaning. So under it, give every row a short paragraph in plain English with:
+The matrix is an index. The graph is a map. The detail is where the meaning lives — and it is **point form, never paragraphs**.
 
-1. The real file and line, or the real table and column.
-2. A real value from the actual code or database.
-3. What goes wrong, or what stays broken, if this step is skipped.
+A wall of prose gets skipped, so the work in it never happens. Five short bullets beat one dense paragraph every time.
 
-Example of the shape:
+### The shape
 
-> **3. Branch on admin URL** — `auth/login.py:88` currently reads `tenant_config.login_mode` and always gets `"standard"`. The step adds the `is_admin_login` check so a request to `admin.example.com` takes the SSO branch instead. Skip it and admins keep landing on the password form they cannot use.
+Header line, then bullets. Same labels every step:
 
-A reader who has never seen this codebase must follow it without asking. If you cannot write that paragraph for a row, you do not understand the row — go read the code, or drop the row and say why.
+> **2. Re-apply maths** `[ ]` · 45 min · after 1
+> - Now: `report_studio.py:622` **adds** returns up — `SUM(CASE WHEN ... THEN ror ELSE 0 END)`
+> - Fix: **multiply** them — `EXP(SUM(LOG(1+ror)))-1`
+> - Real damage: Allegion shows **+1.67%** for a period it **lost 0.18%**
+> - Also `:507`: add `AND opening_value <> 0`, or WEX's **$1,798,325.94** is subtracted twice
+> - Skip it: the grid keeps showing wrong numbers
+
+| Bullet | Holds |
+|---|---|
+| Now: | what the code does today |
+| Fix: | what it should do instead |
+| Real damage: | a real number or string |
+| Skip it: | what stays broken |
+
+Drop any bullet that has nothing real to put in it. Four bullets is fine. Two is fine.
+
+### Hard caps
+
+| Cap | Value |
+|---|---|
+| Bullets per step | 5 |
+| Lines per bullet | 1 |
+| Bold per step | 1 or 2 numbers |
+| Background prose | none |
+
+### Easy English — this matters most
+
+Write the sentence a reader who has never seen the code still understands. No jargon, no long words where a short one works, no clause stacking.
+
+| Do not write | Write |
+|---|---|
+| performs arithmetic summation | adds them up |
+| the grain diverges | the two queries count different rows |
+| returns a read_failed envelope | the panel shows nothing |
+| is not propagated downstream | is dropped |
+| no-op | changes nothing |
+
+Never explain background. If the reader wants the why, they will ask.
+
+### Two more worked examples
+
+> **1. Rebase onto dev** `[!]` · 30 min · **you run this, I do not switch branches**
+> - Do: `git rebase origin/dev`
+> - Why: branch is **107 commits behind**
+> - Conflicts: `contribution_sql.py`, `contribution_service.py`
+> - Skip it: every step below edits SQL that dev already moved to `report_studio.py`
+
+> **9. Narrow the reason code** `[ ]` · 15 min · after 1
+> - Now: `contribution_service.py:360` badges a security "cannot compute" if **any one day** has no market value
+> - Real case: WEX has **1 bad day out of 350** — and a correct **−21.30%** return
+> - So the user sees: a right number, with a "cannot compute" badge on it
+> - Fix: its own reason code, or a threshold
+
+If you cannot fill `Real damage:` with something real, you do not understand the step — go read the code, or drop the step and say why.
 
 ## Step 7 — Close
 
@@ -139,6 +329,13 @@ One line: the single next action, small enough to start now.
 ## Never
 
 - Never change a file, run a build, or start a step. This command shows; it does not do.
+- Never draw a step as a bare line of text. Every step is a box.
+- Never draw a box with no arrow touching it, unless it sits in `NO DEPENDENCIES`.
+- Never write `a3` in place of a line. A tag is not an arrow.
+- Never group the graph by `LEVEL 0 / LEVEL 1`. Group it by chain, and connect the chain.
+- Never write the detail as paragraphs. Point form only.
+- Never mix Unicode and ASCII box characters in one graph.
+- Never widen a box or a matrix cell to fit more words. Cut the words.
 - Never re-open a decision the user already made. If a step says "add a row to `tenant_config`", that is the design — show it, do not counter-propose.
 - Never pad the matrix with rows that are not real work.
 - Never replace the graph or the matrix with a bullet list.

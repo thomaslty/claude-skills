@@ -1,6 +1,6 @@
 ---
 name: show-plan
-description: "Show the full current plan — nothing summarised, nothing cut — as a goal line, a box flow diagram, a matrix table of every step, and point-form detail per row. Triggers on 'show me the plan', 'show the full plan', 'what's the plan', 'plan with graph and matrix', or /show-plan. Strictly read-only: changes no file, runs no state-changing command."
+description: "Show the full current plan — nothing summarised, nothing cut — as a goal line, a picture of the real files, tables and screens it touches, a matrix table of every step, and point-form detail per row. Triggers on 'show me the plan', 'show the full plan', 'what's the plan', 'plan with graph and matrix', or /show-plan. Strictly read-only: changes no file, runs no state-changing command."
 allowed-tools: Read, Glob, Grep, Bash(git log:*), Bash(git status:*), Bash(git diff:*), Bash(ls:*), Bash(cat:*)
 ---
 
@@ -13,7 +13,7 @@ Displays the plan that is already in play. It does not invent one, does not refi
 The output is always the same four blocks, in this order:
 
 1. **Goal** — one sentence.
-2. **Graph** — a flow diagram of boxes joined by arrows.
+2. **Graph** — a picture of the real files, tables and screens the plan touches.
 3. **Matrix** — every step as a row.
 4. **Detail** — point form, one block per row.
 
@@ -45,7 +45,9 @@ If there is no plan anywhere, say exactly that and stop. Do not draft one.
 
 Show every step. No "…and 4 more", no "the rest follow the same pattern", no collapsing similar steps into one row.
 
-If the plan has 23 steps, the graph has 23 boxes and the matrix has 23 rows. A long plan is the reason the user asked.
+If the plan has 23 steps, the matrix has 23 rows and the detail has 23 blocks. A long plan is the reason the user asked.
+
+The graph is the exception: it draws the system, not one box per step, so it has as many boxes as the system has parts.
 
 ## Step 3 — Goal
 
@@ -55,185 +57,140 @@ Then one line: what is done already, what is left. Real numbers — "4 of 11 ste
 
 ## Step 4 — Graph
 
-**It is a flow diagram.** Boxes joined by arrows, showing what feeds what. Not a grouped list of boxes. Not a one-line label per step.
+**Draw the system, not the schedule.**
+
+The matrix below already carries the step number, the effort, the status and the order. The graph must not repeat any of them.
+
+What the matrix cannot show is the shape of the thing being changed — which file feeds which, which tables join on what column, what the screen looks like. That is the graph's only job.
 
 Put it in a plain fenced code block. It must render in a terminal, so no mermaid, no HTML, no images — the TUI shows those as raw text.
 
-### The box
+### The five rules
 
-Three lines, fixed width, always the same shape:
-
-```
-┌────────────────────┐
-│ [!] 1  Rebase dev  │   line 1: marker + number + short name
-│  107 behind dev    │   line 2: the one real anchor
-│  30 min - YOU run  │   line 3: effort + who runs it
-└──────────┬─────────┘   bottom edge carries the exit when an arrow leaves
-           │
-           ▼
-```
-
-| Rule | Value |
+| Never in a box | Draw instead |
 |---|---|
-| Inner width | fixed, 20 chars |
-| Lines inside | exactly 3 |
-| Boxes side by side | max 3 |
-| Whole graph | under 80 columns |
+| `30 min`, `2 h` | nothing — matrix has it |
+| `[ ] 16 sidebar` | `sidebar.jsx` |
+| `sidebar.jsx:66` inside | `+1 nav item` at right |
+| fixed-width box | as wide as the real name |
+| plain `│` edge | `│ zone_id` |
 
-- **Line 1** — status marker, step number, short name. `[x]` done, `[>]` now, `[ ]` next, `[!]` blocked.
-- **Line 2** — a real anchor. `rs.py:622` yes. `the SQL file` no. A number works too: `17/11/4 hits`.
-- **Line 3** — effort in concrete units, plus owner or blocker. `45 min`, `2 h`, `30 min - YOU run`.
+- **No durations.** Eighteen boxes each carrying `30 min` is eighteen wasted lines, and `Effort` is already a matrix column.
+- **Name the real thing.** `sidebar.jsx` can be grepped and opened. `16 sidebar` is the plan talking about itself.
+- **Counts go outside the box, on the right.** `12 rows`, `13 pins`, `3 tables / 19 cols`. Inside the box goes the name and nothing else.
+- **Box width follows the name.** `dbo.tenant_login_detail` gets a box 25 wide. Never shorten a real name to fit a box.
+- **Label the edge.** The join column, the import, the route, the key — `zone_id`, `-r`, `POST /sso/callback`, `sso_encrypt_key`. A bare `│` says only "after", which the matrix already said.
 
-If a name will not fit 18 characters, shorten the name. Never widen the box.
+Not everything has to be a box. A plain name with a line off it is often clearer than a box.
+
+### No chains, no levels, no JOIN block
+
+Do not group the graph by `CHAIN A / CHAIN B`, by `LEVEL 0 / LEVEL 1`, or by a `JOIN` block. Execution order is the matrix's `Depends on` column, and drawing it twice is what made the old graph unreadable.
+
+Group by the real area of the system instead, and head each block with what it is: `the SSO database`, `the screen`, `the build step`.
+
+### Three kinds of picture
+
+Draw the ones the plan actually needs. One is usually enough. Three is the most there should ever be.
+
+**1. The system** — what talks to what, and over which column or key.
+
+```
+the SSO database
+
+  omrobot db                     aisql-omegasso-dev
+  ──────────                     ──────────────────
+  omega_env DEV ─── sso_db_* ──► dbo.zone                   1 row
+       │                              ▲
+       │                              │ zone_id
+       │                         dbo.tenant                 12 rows
+       │                              ▲
+       │ sso_encrypt_key              │ tenant_id
+       └─────── unseals ────────► dbo.tenant_login_detail    11 rows
+                                  fa_client_secret = Fernet token
+
+  12 tenants, 11 login rows — 104 CWKJH is the one that cannot sign in.
+  Three files get you there: db.py:108 twin session · model_sso.py 3 tables /
+  19 cols · sso_crypto.py unseals with the DEV key.
+```
+
+**2. The screen** — when the plan builds or changes UI, draw it with real data sitting in it.
+
+```
+the screen
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  SSO Config                     [ DEV ]         [ ⟳ Refresh ]│
+  ├──────────────────────────────────────────────────────────────┤
+  │  Zones                                         [ + Add zone ]│
+  │  ┌────┬───────┬────────────────────────┬────────┬───────┐    │
+  │  │  4 │ zone1 │ https://aidev-omegana… │ active │ ✎  ✕  │    │
+  │  └────┴───────┴────────────────────────┴────────┴───────┘    │
+  │  Tenants                                     [ + Add tenant ]│
+  │  ┌──────┬───────────────┬───────┬──────────────┬───────┐     │
+  │  │ -999 │ PIERSIGHT     │ zone1 │ E2D8B4BB-CC… │ ✎  ✕  │     │
+  │  │  104 │ CWKJH      ⚠  │ zone1 │ 1F7BEC8A-DE… │ ✎  ✕  │     │
+  │  └──────┴───────────────┴───────┴──────────────┴───────┘     │
+  └──────────────────────────────────────────────────────────────┘
+       ⚠  104 CWKJH is the one tenant with no login row.
+
+  api.js  ─── 12 calls ───►  the page  ───►  login dlg ┐
+                                             2 dialogs ┴──►  sidebar.jsx
+                                                             ├ Setting
+                                                             └ SSO Config ← new
+```
+
+Real rows, real ids, real urls — truncated with `…` where they are long. A wireframe full of `foo` / `bar` is worth nothing.
+
+**3. Before and after** — when the plan reshapes something that already exists, put the two side by side.
+
+```
+  TODAY                                AFTER
+  ├── requirements.txt      0 pins     ├── pyproject.toml  ◀── you edit this
+  ├── shared/requirements   9 pins     ├── uv.lock         ◀── pins transitives
+  ├── requirements.swagger 13 pins     └── apis/<c>/
+  ├── requirements.pytest  16 pins
+  └── …11 more                         15 files become 2.
+```
 
 ### Charset — Unicode is the default
 
 ```
-┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼ ▼ ► ●
+┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼ ▼ ► ◀ ← ● ⚠ ✎ ✕ ⟳ ·  …
 ```
+
+Emoji are not on the list. They are double-width almost everywhere, so they push the rest of the line one column right and every box below them stops lining up.
 
 Use ASCII only when the output is going into a file, a PR comment, or somewhere a box font may be missing:
 
 ```
-+ - | > v *
++ - | > v * (!) [/] [x]
 ```
 
 Never mix the two in one graph.
 
-`▼` and `►` are ambiguous-width — a rare terminal font renders them two columns wide and pushes that line one character right. If the user says the arrows look off, swap those two for `v` and `>` and keep every other Unicode character.
+`▼` `►` `◀` `⚠` `⟳` `✎` `✕` are ambiguous-width — a rare terminal font renders them two columns wide and pushes that line one character right. If the user says the picture looks off, swap them for `v` `>` `<` `(!)` `(r)` `[/]` `[x]` and keep every other Unicode character.
 
-### Arrows are the point
+### Under the picture
 
-**Every box gets a line drawn into it or out of it.** The only boxes without a line are the ones in the `NO DEPENDENCIES` block.
-
-Never write a shorthand tag in place of a line. `a3` on its own is not an arrow — it is what broke this command before. Draw the line.
-
-The one place a tag helps: a box with a parent far away on the page, where a long line would cross other boxes. Then draw the near parent's line and label the far one `a10` next to the box. Prefer drawing both lines.
-
-### Layout — chains, not levels
-
-Group by **flow**, not by depth. Three kinds of block:
-
-| Block | Holds |
-|---|---|
-| `NO DEPENDENCIES` | steps with no parent and no child |
-| `CHAIN A`, `CHAIN B`, … | one connected run of work, named |
-| `JOIN` | a step several chains feed into |
-
-Name each chain for what it does — `CHAIN A ── the hook rewrite`, not `CHAIN A`.
-
-Chains run down the page. Where one step feeds several, fan out sideways.
-
-Worked example, a real 17-step plan:
+One line of plain English saying what the picture means, with a real number in it. Then the gate, if there is one.
 
 ```
-NO DEPENDENCIES ── start any of these now, nothing waits on them
-┌────────────────────┐ ┌────────────────────┐ ┌────────────────────┐
-│ [ ] 1  Drop ||true │ │ [ ] 8  Except doc  │ │ [ ] 14 13 floors   │
-│  settings.json:23  │ │  3-inline.md       │ │  checked > 120     │
-│  5 min             │ │  30 min            │ │  2 h               │
-└────────────────────┘ └────────────────────┘ └────────────────────┘
-┌────────────────────┐ ┌────────────────────┐
-│ [ ] 15 Print all   │ │ [ ] 16 Name enums  │
-│  alembic_env:784   │ │  temporal_type 1,2 │
-│  5 min             │ │  10 min            │
-└────────────────────┘ └────────────────────┘
-
-CHAIN A ── the hook rewrite
-┌────────────────────┐
-│ [ ] 2  One scan    │
-│  sh:30-39 drop $1  │
-│  20 min            │
-└──────────┬─────────┘
-           │
-           ├─────────────────────┬──────────────────────┐
-           │                     │                      │
-           ▼                     ▼                      ▼
-┌────────────────────┐ ┌────────────────────┐ ┌────────────────────┐
-│ [ ] 3  Del grep -v │ │ [ ] 4  Fix check 6 │ │ [ ] 5  Check 13 v2 │
-│  sh:43-44, 628 fls │ │  sh:59 __init__    │ │  #temp in message  │
-│  5 min             │ │  20 min            │ │  45 min            │
-└────────────────────┘ └────────────────────┘ └──────────┬─────────┘
-       ● ends                 ● ends                     │
-                                                         ▼
-                                              ┌────────────────────┐
-                                              │ [ ] 6  Add check14 │
-                                              │  .sql in apis/     │
-                                              │  30 min            │
-                                              └──────────┬─────────┘
-                                                         │
-                                                         ▼
-                                              ┌────────────────────┐
-                                              │ [ ] 7  Rewrite md  │
-                                              │  14 checks, no arg │
-                                              │  30 min            │
-                                              └──────────┬─────────┘
-                                                         │
-                                                         └───────► 17
-
-CHAIN B ── kill the shared package
-┌────────────────────┐              ┌────────────────────┐
-│ [ ] 9  Restore sql │              │ [ ] 10 Paste 22 py │
-│  21 files          │              │  widgets/*/data/   │
-│  15 min            │              │  half a day        │
-└──────────┬─────────┘              └──────────┬─────────┘
-           │                                   │
-           ▼                                   │
-┌────────────────────┐                         │
-│ [ ] 11 Inline 9 gn │                         │
-│  data_service:44   │                         │
-│  2 h               │                         │
-└──────────┬─────────┘                         │
-           │                                   │
-           └─────────────────┬─────────────────┘
-                             │
-                             ▼
-                  ┌────────────────────┐
-                  │ [ ] 12 Del package │
-                  │  77 classes gone   │
-                  │  5 min             │
-                  └──────────┬─────────┘
-                             │
-                             ▼
-                  ┌────────────────────┐
-                  │ [ ] 13 pyproject   │
-                  │  shared/:124       │
-                  │  2 min             │
-                  └──────────┬─────────┘
-                             │
-                             └───────► 17
-
-JOIN
-                  ┌────────────────────┐
-       7 ────────►│ [ ] 17 Run tiers   │
-      13 ────────►│  floor 6 aspose    │
-                  │  45 min            │
-                  └────────────────────┘
-
-[x] done  [>] now  [ ] next  [!] blocked   ● = chain ends here
-Critical path: 10 ─► 12 ─► 13 ─► 17   (about 5 h)
-Gate: backend is on `dev`, clean. Never commit on dev — you ask for the branch.
+  12 tenants, 11 login rows. 104 CWKJH is the gap.
+  Gate: on `feat/zone-infra-change`, discussion mode on — nothing starts yet.
 ```
 
-Under every graph, three lines: the legend, the critical path with a total time, and any gate.
+No legend. No critical path. No time total. The matrix carries all three.
 
 ### Alignment
 
-The arrow must land on the box it points at. Count columns before you draw.
-
-- A box's exit `┬` sits at inner column 11.
-- Side-by-side boxes sit at column 0, 23, 46 — one space between them.
-- A fan bar's `├` lines up with the parent's exit; each `┬` and `┐` lines up with a child's exit column.
-
-A misaligned arrow is worse than no arrow. If you cannot line it up, stack the boxes instead.
+The arrow must land on the box it points at. Count the columns before you draw. A misaligned arrow is worse than no arrow — if it will not line up, stack the boxes instead.
 
 ### When it will not fit
 
-- More than 3 boxes fanning out: wrap to a second row of boxes under the first, fed by the same bar.
-- A chain deeper than about 10 boxes: cut it and write `└───► continues below` then restart with `CHAIN A (cont.)`.
-- Never let a line wrap. A wrapped graph is worse than no graph.
-
-If the plan is a straight line with no parallelism, say so in one line and still draw the boxes and arrows — the user asked for the graph.
+- **Never let a line wrap.** A wrapped picture is worse than no picture. Keep the whole thing under 80 columns.
+- **Ten siblings:** draw three and write `└── …7 more` with the count on the right. Do not draw ten boxes.
+- **Over about 40 lines:** it is two pictures, not one.
 
 ## Step 5 — Matrix table
 
@@ -329,13 +286,17 @@ One line: the single next action, small enough to start now.
 ## Never
 
 - Never change a file, run a build, or start a step. This command shows; it does not do.
-- Never draw a step as a bare line of text. Every step is a box.
-- Never draw a box with no arrow touching it, unless it sits in `NO DEPENDENCIES`.
-- Never write `a3` in place of a line. A tag is not an arrow.
-- Never group the graph by `LEVEL 0 / LEVEL 1`. Group it by chain, and connect the chain.
+- Never put a duration in a box. Effort is a matrix column and nothing else.
+- Never put a step number or a status marker in a box. The matrix owns both.
+- Never label a box with the plan's own step title. Label it with the real file, table, screen or route.
+- Never leave an edge bare when a real column, import, key or route names it.
+- Never shorten a real name to fit a fixed box. Widen the box.
+- Never group the graph by `CHAIN A / CHAIN B`, by `LEVEL 0 / LEVEL 1`, or by a `JOIN` block.
+- Never draw a critical path, a time total, or a status legend under the graph.
+- Never draw a wireframe with placeholder data. Real ids, real urls, real codes, or do not draw it.
 - Never write the detail as paragraphs. Point form only.
 - Never mix Unicode and ASCII box characters in one graph.
-- Never widen a box or a matrix cell to fit more words. Cut the words.
+- Never widen a matrix cell to fit more words. Cut the words.
 - Never re-open a decision the user already made. If a step says "add a row to `tenant_config`", that is the design — show it, do not counter-propose.
 - Never pad the matrix with rows that are not real work.
 - Never replace the graph or the matrix with a bullet list.

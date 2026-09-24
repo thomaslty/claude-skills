@@ -39,6 +39,8 @@ actual security checks on real code files.
 
 ## Core Principle
 
+**Reproduce before you hypothesize.** The cycle opens with REPRODUCE: a trigger you control that makes the failure happen on demand. It is the oracle every later phase leans on — without it you cannot tell a real fix from a problem that merely went quiet. If the failure genuinely can't be triggered locally, REPRODUCE instruments the real environment instead and hands off to the manual-verification loop below.
+
 **Never stack hypotheses.** One hypothesis leads to one fix. The fix is verified before moving on. Unverified fixes create confusion about what actually worked.
 
 ## Artifact Structure
@@ -48,9 +50,12 @@ All HFV artifacts live in the project directory under `hfv/`:
 ```
 hfv/
   <issue-name>/                          # Active investigation
+    reproduction.md                      # Repeatable trigger (REPRODUCE phase)
+    repro_test.<ext>                     # Optional: the failing repro asset / oracle
     hypothesis-<desc>.md                 # Each hypothesis attempt
   archive/                               # Verified fixes
     <issue-name>/
+      reproduction.md                    # Archived with the issue
       hypothesis-<desc>.md               # Archived with result
 ```
 
@@ -115,6 +120,7 @@ digraph hfv {
   rankdir=TB;
   node [shape=box];
 
+  reproduce [label="REPRODUCE\nTrigger the failure on demand\n(hfv:reproduce)"];
   explore [label="EXPLORE\nGather evidence, read logs/code"];
   hypothesize [label="HYPOTHESIZE\nForm exactly ONE hypothesis\nWrite hypothesis file"];
   validate [label="VALIDATE\nTwo parallel sub-agents:\n1. Code review of hypothesis\n2. Online research validation"];
@@ -123,6 +129,7 @@ digraph hfv {
   evaluate [label="EVALUATE\nUpdate hypothesis file with result"];
   archive [label="ARCHIVE\nMove to archive/" shape=doublecircle];
 
+  reproduce -> explore [label="reproduced (or instrumented)"];
   explore -> hypothesize;
   hypothesize -> validate;
   validate -> fix [label="hypothesis holds"];
@@ -135,6 +142,17 @@ digraph hfv {
 ```
 
 ## Phase Details
+
+### REPRODUCE
+
+Establish a repeatable trigger for the failure **before** gathering causal evidence. Reading logs and code (EXPLORE) tells you what might be wrong; REPRODUCE makes the bug fail on demand so you have an objective oracle.
+
+**REQUIRED SUB-SKILL:** Use `hfv:reproduce` for the full method (OBSERVE → ISOLATE → REPRODUCE → CONFIRM). Write the result to `hfv/<issue>/reproduction.md`.
+
+- **Reproduced** (reliable trigger, ideally a failing test/script) → carry that asset forward; FIX will be verified against it. Proceed to EXPLORE.
+- **Not reproducible locally** (environment-bound — real load, prod data, infra) → this is the classic `hfv:full` case. Add instrumentation/logging and define the observable signal that counts as the failure, then proceed. The STOP → user-verifies loop below is how you confirm without local reproduction.
+
+**Output:** `reproduction.md` with a trigger or, failing that, instrumentation + a defined signal.
 
 ### EXPLORE
 
@@ -165,12 +183,12 @@ Dispatch both agents simultaneously using the Agent tool:
 > Re-read the hypothesis I just formed: [hypothesis summary]. Trace the relevant code paths
 > in [files] and look for: (1) evidence that contradicts this hypothesis, (2) assumptions
 > that don't hold in the actual code, (3) a simpler explanation I may have missed. Report
-> what you find in under 200 words.
+> each finding in one line with its file:line.
 
 **Agent 2 — Online Research:**
 > Search online for: [error/symptom] caused by [hypothesized cause]. Check known issues,
 > official docs, changelogs, and community discussions. Does external evidence support or
-> contradict this hypothesis? Report in under 200 words.
+> contradict this hypothesis? Report each finding in one line with its source link.
 
 **After both return:**
 - Either raises a concrete contradiction → incorporate into the hypothesis's "Contradicting"

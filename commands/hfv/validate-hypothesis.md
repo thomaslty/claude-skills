@@ -39,13 +39,13 @@ actual security checks on real code files.
    **Agent 1 — Code Review:**
    > Re-read the hypothesis: [hypothesis summary]. Trace the relevant code paths in [files]
    > and look for: (1) evidence that contradicts this hypothesis, (2) assumptions that don't
-   > hold in the actual code, (3) a simpler explanation that may have been missed. Report in
-   > under 200 words.
+   > hold in the actual code, (3) a simpler explanation that may have been missed. Report each
+   > finding in one line with its file:line.
 
    **Agent 2 — Online Research:**
    > Search online for: [error/symptom] caused by [hypothesized cause]. Check known issues,
    > official docs, changelogs, and community discussions. Does external evidence support or
-   > contradict this hypothesis? Report in under 200 words.
+   > contradict this hypothesis? Report each finding in one line with its source link.
 
 3. **Evaluate results:**
    - Either agent raises concrete contradiction → update the hypothesis file's "Contradicting"

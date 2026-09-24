@@ -1,5 +1,5 @@
 ---
-description: "Split-brain workflow: Fable 5 designs in the main session, Opus 5 sub-agents execute the code. Use when you want Fable's planning with Opus's implementation. Triggers on /fable-design-opus-execute, 'fable designs opus executes', 'plan with fable build with opus'."
+description: "Split-brain workflow: Fable designs in the main session, Opus sub-agents execute the code. Use when you want Fable's planning with Opus's implementation. Triggers on /fable-design-opus-execute, 'fable designs opus executes', 'plan with fable build with opus'."
 argument-hint: "[task description] [--parallel]"
 ---
 
@@ -7,7 +7,7 @@ argument-hint: "[task description] [--parallel]"
 
 ## Overview
 
-Two models, two jobs. The main session (**Fable 5**) owns thinking: explore, decide, write the plan. Sub-agents (**Opus 5**) own typing: edit files, run tests, report back. Fable never writes production code; Opus never re-decides the design.
+Two models, two jobs. The main session (**Fable**) owns thinking: explore, decide, write the plan. Sub-agents (**Opus**) own typing: edit files, run tests, report back. Fable never writes production code; Opus never re-decides the design.
 
 **Core principle:** the design must survive the handover in writing. A non-fork sub-agent starts with an EMPTY context — it sees only the prompt you give it. Anything Fable worked out and did not write down is lost.
 
@@ -18,11 +18,11 @@ Two models, two jobs. The main session (**Fable 5**) owns thinking: explore, dec
 | bare text | The task to design + execute |
 | `--parallel` | Fan out independent chunks |
 
-The executor is **always Opus 5**. There is no downgrade flag — never substitute Sonnet or Haiku, however mechanical the task looks.
+The executor is **always Opus**. There is no downgrade flag — never substitute Sonnet or Haiku, however mechanical the task looks.
 
 ## Phase 0 — Preflight
 
-1. Confirm the main session model is Fable 5. If it is not, say so in one line and tell the user to run `/model fable`, then stop. Do not silently proceed on another model.
+1. Confirm the main session is running a Fable model. If it is not, say so in one line and tell the user to run `/model fable`, then stop. Do not silently proceed on another model.
 2. If no task was given in `$ARGUMENTS`, ask for it in one line and stop.
 
 ## Phase 1 — Design (Fable, main session)

@@ -51,7 +51,7 @@ digraph propose_flow {
 }
 ```
 
-**IMPORTANT:** Each phase is a separate Agent tool call. Wait for each agent to complete before launching the next. Do NOT combine phases or run them in parallel.
+Each phase is a separate Agent call, run one after another — each phase needs the previous one's report.
 
 ---
 
@@ -198,20 +198,13 @@ After all three phases complete, synthesize into a single proposal:
 ## Red Flags — STOP
 
 - About to edit or write a file -> STOP. This skill is read-only.
-- Skipping Phase 3 verification ("the solutions look obvious") -> Phase 3 is mandatory.
-- Not doing online searches in Phase 3 ("I'm confident") -> Online search is mandatory.
-- Combining phases into one agent -> Each phase MUST be a separate agent.
-- Running phases in parallel -> Phases are sequential. Each depends on the previous.
 - Presenting unverified claims as verified -> Everything must have evidence.
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| Skipping online search in Phase 3 | Online verification is MANDATORY — catches hallucinated APIs and impossible approaches |
 | Engineer copies explore findings without adding value | Engineer must design NEW solutions, not summarize what exists |
 | Verify agent rubber-stamps engineering report | Verify must be INDEPENDENT and SKEPTICAL — assume previous agents could be wrong |
 | Too many solutions (5+) | Cap at 4, skip complexity levels that don't apply |
 | All solutions at same complexity level | Force ranking minimal -> complex. There is almost always a simpler option |
-| Making code changes | This skill is READ-ONLY. Present findings. Change nothing. |
-| Running agents in parallel | Phases are SEQUENTIAL. Each builds on the previous output. |

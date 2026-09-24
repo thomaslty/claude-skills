@@ -66,7 +66,7 @@ Launch ALL six agents simultaneously using the Agent tool. Each agent receives:
 - Its specific review focus area
 - Instructions to return a structured report
 
-**IMPORTANT:** All 6 Agent() calls MUST be in a single message to run in parallel.
+Send all 6 Agent() calls in one message so they run in parallel.
 
 Each agent must return findings in this format:
 ```
@@ -134,8 +134,7 @@ Analyze:
 - Do code comments accurately describe what the code does?
 - Are there common misconceptions about the libraries being used?
 
-You MUST use WebSearch or context7 MCP to verify at least the key library usages.
-Do not rely on training data alone — look up the actual current docs.
+Verify the key library usages with WebSearch or context7 — training data can be out of date.
 Report issues with specific file:line references and documentation links.
 ```
 
@@ -240,8 +239,6 @@ Present the synthesized report in this format:
 
 | Mistake | Fix |
 |---------|-----|
-| Launching agents sequentially | All 6 MUST be in a single message for parallel execution |
 | Auto-fixing issues found | Present report only — user decides what to fix |
-| Skipping web search in truthfulness agent | Truthfulness agent MUST verify against real docs |
 | Reporting raw agent outputs separately | Always synthesize into a single unified report |
 | No file:line references | Every finding must reference specific code locations |

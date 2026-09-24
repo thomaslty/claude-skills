@@ -44,8 +44,6 @@ Gather all available evidence before forming a hypothesis:
 - Review environment differences (JDK versions, OS, etc.)
 - Search for similar issues, known bugs, or changelogs
 
-**Be thorough.** The quality of the hypothesis depends on the quality of evidence gathered.
-
 **Output:** Summary of evidence collected, organized by relevance.
 
 ## Phase 2: HYPOTHESIZE
@@ -98,12 +96,12 @@ Dispatch both agents simultaneously using the Agent tool:
 > Re-read the hypothesis I just formed: [hypothesis summary]. Trace the relevant code paths
 > in [files] and look for: (1) evidence that contradicts this hypothesis, (2) assumptions
 > that don't hold in the actual code, (3) a simpler explanation I may have missed. Report
-> what you find in under 200 words.
+> each finding in one line with its file:line.
 
 **Agent 2 — Online Research:**
 > Search online for: [error/symptom] caused by [hypothesized cause]. Check known issues,
 > official docs, changelogs, and community discussions. Does external evidence support or
-> contradict this hypothesis? Report in under 200 words.
+> contradict this hypothesis? Report each finding in one line with its source link.
 
 **After both return:**
 - Either raises a concrete contradiction → incorporate into the hypothesis's "Contradicting"

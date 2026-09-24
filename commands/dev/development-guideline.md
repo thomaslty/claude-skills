@@ -13,7 +13,7 @@ The development constitution for this project. Three pillars, no exceptions:
 2. **Backend = Test-Driven Development (TDD)** — failing test first, then code.
 3. **Frontend = Visual-Driven Development (VDD)** — build against the rendered UI, confirm on screen.
 
-**The Iron Rule: you MUST visually confirm every feature works and every bug is fixed in the running app. Visual confirmation is mandatory and is NEVER skipped.**
+**Every feature and every bug fix is confirmed in the running app before you call it done** — tests passing is not the same as seeing it work.
 
 ## When to Use
 
@@ -59,7 +59,7 @@ Build the interface, render it, and iterate against what you actually see — no
 
 ## The Visual-Confirmation Mandate (non-negotiable)
 
-**Violating the letter of this rule is violating its spirit.** "It compiles", "tests pass", and "the code looks correct" are NOT visual confirmation.
+"It compiles", "tests pass", and "the code looks correct" are not visual confirmation.
 
 Before any feature is "done" or any bug is "fixed", you MUST:
 

@@ -38,7 +38,7 @@ cp -r commands/hfv ~/.claude/commands/hfv
 |---------|-------------|
 | `/commit` | Git commits without the Co-Authored-By trailer |
 | `/show-plan` | Show the full current plan — goal, dependency graph, matrix table, worked detail per step |
-| `/fable-design-opus-execute` | Fable 5 designs in the main session; Opus 5 sub-agents execute the code |
+| `/fable-design-opus-execute` | Fable designs in the main session; Opus sub-agents execute the code |
 
 #### `dev:` — development lifecycle and code review
 

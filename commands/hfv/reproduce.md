@@ -8,15 +8,15 @@ description: "Use at the very start of any debugging task — a reported bug, te
 Establish a **repeatable trigger** for the failure before anything else. A bug you cannot reproduce is a bug you cannot fix — only guess at.
 
 <REAL-DATA-ONLY>
-**The reproduction MUST run against the REAL system with REAL data. A mock, stub, fake, or simulated reproduction is NOT a reproduction — it is a restatement of your own assumptions, and it proves nothing.**
+**The reproduction runs against the real system with real data.** A mock, stub, fake, or simulated reproduction only restates your own assumptions, so it proves nothing.
 
 - Call the **real method / endpoint** the user named — with its real signature — not a wrapper, not a re-implementation.
 - Hit the **real data source** (real DB, real API, real service, real environment) the bug occurs in. Reads against prod/dev data are the point; that is where the bug lives.
 - Use the **real identifiers** from the report (the actual user, tenant, account, id), not invented placeholders.
-- A mock can only return what you told it to return. If you mock the dependency and then "observe" the failure, you have observed your hypothesis, not the bug. That is the single most common way this phase is faked — do not do it.
-- The ONLY time a test double is acceptable is to bypass an unrelated transport/auth layer that is not part of the failure (e.g. faking a session token), and even then every component on the failure's path stays real.
+- A mock can only return what you told it to return. If you mock the dependency and then "observe" the failure, you have observed your hypothesis, not the bug.
+- A test double is fine only to bypass an unrelated transport/auth layer that is not part of the failure (e.g. faking a session token); every component on the failure's path stays real.
 
-If you cannot reach the real system/data, you have NOT reproduced — say so, and use the `CAN'T REPRODUCE LOCALLY` path (instrument the real environment); do not substitute a mock and call it done.
+If you cannot reach the real system/data, you have not reproduced — say so, and use the `CAN'T REPRODUCE LOCALLY` path (instrument the real environment) instead of a mock.
 </REAL-DATA-ONLY>
 
 ## When to Use
@@ -171,8 +171,6 @@ Captured from watching agents debug under pressure — every one of these skips 
 
 | Excuse | Reality |
 |--------|---------|
-| "I'll mock the dependency to reproduce it" | A mock returns only what you told it to. You'd be confirming your assumption, not the bug. Hit the REAL system + REAL data. |
-| "A unit test with the failure asserted reproduces it" | Asserting `== []` against a stub proves the stub, not the system. Reproduction = the real call produces the failure on its own. |
 | "I read the logs/metrics, I know the cause" | Reading evidence ≠ reproducing. Evidence feeds a hypothesis; it isn't a trigger you control. |
 | "It's obviously the connection pool / null / race" | Obvious causes are wrong often enough that an unverified one wastes a deploy cycle. Reproduce, then confirm. |
 | "It's intermittent, can't be reproduced" | "Intermittent" means determinism is unknown, not zero. Measure the rate (N of M), or instrument. Don't skip. |
@@ -183,9 +181,7 @@ Captured from watching agents debug under pressure — every one of these skips 
 
 ## Red Flags — STOP, you're skipping reproduction
 
-- Reaching for a mock/stub/fake instead of the real method + real data — STOP, that reproduces nothing
-- Re-implementing the dependency's logic in the test instead of calling the real one
-- Calling a wrapper/public method when the user named a specific method — call the one they named
+- Mocking anything on the failure's path (see REAL-DATA-ONLY)
 - Proposing a fix, config change, or "mitigation" before the failure fails on demand
 - Describing the cause ("it's X") instead of the trigger ("run Y → see Z")
 - "Let me also fix..." / "while I'm in here..." before CONFIRM passes
@@ -199,5 +195,3 @@ Captured from watching agents debug under pressure — every one of these skips 
 - **Paraphrasing the symptom.** "It errors out" loses the exact message that names the bug. Quote it.
 - **Reproducing a neighbor, not the bug.** A red test is only a repro if it's red for the *reported* reason.
 - **Stopping at "works on my machine, fails sometimes."** Pin the frequency or the condition; an unmeasured "sometimes" can't validate a fix.
-- **Substituting a mock for the real system.** The cardinal sin (see REAL-DATA-ONLY). A reproduction built on test doubles proves your assumptions, not the bug. Call the real method against the real data source with the real identifiers. Doubles are allowed ONLY for an unrelated transport/auth shim, never for any component on the failure's path.
-- **Calling the wrong entry point.** When the report names a specific method, reproduce by calling THAT method with its real signature — not a higher-level wrapper that may mask or reshape the failure.

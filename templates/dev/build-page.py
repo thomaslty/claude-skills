@@ -21,7 +21,7 @@ for nid, node in data["nodes"].items():
 
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
-LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 300}
+LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 1024}
 base = pathlib.Path(data_path).resolve().parent
 errors = []
 
@@ -62,7 +62,7 @@ def inline_screen(at, screen):
         errors.append(f"{at}: screen file not found: {src}")
         return
     if src.stat().st_size > LIMITS["screen_kb"] * 1024:
-        errors.append(f"{at}: screen {src.name} is over {LIMITS['screen_kb']} KB; inline no images")
+        errors.append(f"{at}: screen {src.name} is over {LIMITS['screen_kb']} KB; inline no images, and compile CSS with screen-css.py so only used classes are kept")
         return
     if len(screen.get("caption", "")) > LIMITS["label"]:
         errors.append(f"{at}: screen caption is over {LIMITS['label']} chars")

@@ -11,11 +11,11 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 ## Steps
 
 1. Find the ticket (below). The rest of this command works from `docs/tickets/<slug>.md`.
-2. Card: set phase `design` (see Orca card below).
+2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
 3. Spawn `dev-designer` with `ticket: docs/tickets/<slug>.md`.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
-   - `STATUS: needs-decisions` → open the page (below), mark the card `waiting: decisions` and unread, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
+   - `STATUS: needs-decisions` → open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
 5. Get the answers (below), then spawn a NEW `dev-designer` with `ticket` and `answers: <the JSON verbatim>`. Back to step 4.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `docs/plans/<slug>.md`.
 7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.
@@ -70,32 +70,29 @@ Jira: THLAU-1          (or)  Notion: <url from the parser>
 ## Open the page
 
 ```bash
-ROOT=$(git rev-parse --show-toplevel)
-orca tab create --url "file://$ROOT/<page>" --worktree "path:$ROOT" --json || open "$ROOT/<page>"
+python3 ~/.claude/scripts/dev/decision-page.py open docs/plans/<slug>.decisions.html
 ```
 
-Keep `result.browserPageId` from the `orca tab create` output. The page opens in Orca's browser, next to the ticket's terminal.
+It opens the page in Orca's browser next to this terminal, or in the default browser outside Orca, and saves the tab id next to the page.
 
 ## Get the answers
 
 - The user pasted JSON → use it.
-- The user typed `done` → read the page itself:
+- The user typed `done` → `python3 ~/.claude/scripts/dev/decision-page.py answers docs/plans/<slug>.decisions.html`. It prints the picks and closes the tab.
+- Exit code 3 (no Orca tab, or it was closed) → ask the user to press Copy and paste the JSON.
 
-```bash
-orca eval --page <browserPageId> --expression "document.getElementById('out').value" --json
-```
+## Scripts
 
-  Use `result.result`, then close the tab with `orca tab close --page <browserPageId> --json`.
-- No `browserPageId` (opened with `open`, outside Orca) → ask for the pasted JSON.
+Do not do these by hand; each script is the only way this command does it.
 
-## Orca card
-
-Only when `orca` is on PATH and `orca worktree list --json` contains this checkout's path. Otherwise skip it silently. `$ROOT` is `git rev-parse --show-toplevel`; the other phase commands use the same check and the same `$ROOT`.
-
-| Phase | Command |
+| Script | Does |
 |---|---|
-| design | `orca worktree set --worktree "path:$ROOT" --workspace-status in-progress --comment "design" --json` |
-| waiting | `orca worktree set --worktree "path:$ROOT" --comment "waiting: decisions" --unread --json` |
+| `ticket-source.py` | parse the ticket argument |
+| `orca-card.py <phase>` | move the Orca card |
+| `decision-page.py` | open page, read picks |
+| `screen-css.py` | real CSS for screens |
+
+All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orca, and `--dry-run` prints what it would run.
 
 ## Cross-References
 

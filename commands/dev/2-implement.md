@@ -12,14 +12,15 @@ You are the coordinator. The build runs in a fresh `dev-implementer` agent.
 
 1. Find the plan from `$ARGUMENTS`:
    - A path to a plan with `Status: approved` → use it.
-   - Requirement text, or a plan still in `draft` → run `/dev:1-design` first (read `~/.claude/commands/dev/1-design.md` and follow it), then come back with the approved plan.
+   - Requirement text, or a plan still in `draft` → run `/dev:1-design` instead (read `~/.claude/commands/dev/1-design.md` and follow it), then stop. The build starts only when the user runs `/dev:2-implement` on the approved plan.
    - Empty → use the only approved plan in `docs/plans/`, or ask in one line.
-2. Card: `orca worktree set --worktree "path:$ROOT" --workspace-status in-progress --comment "implement" --json` (skip when not an Orca worktree, same check as `/dev:1-design`).
+2. Card: `python3 ~/.claude/scripts/dev/orca-card.py implement`
 3. Spawn `dev-implementer` with `plan: <path>`.
 4. Read its report.
-   - `STATUS: done` with every step ticked → step 5.
-   - `STATUS: done` but the plan still has `- [ ]` steps → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report what is left.
-   - `STATUS: blocked` → tell the user the blocker in one sentence, mark the card `blocked` and unread, and stop.
+   - Check the plan with `python3 ~/.claude/scripts/dev/plan-status.py docs/plans/<slug>.md`. Trust its `done` and `left`, not the agent's report.
+   - `done: true` → step 5.
+   - `done: false` and the agent did not report a blocker → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report `left`.
+   - `STATUS: blocked` → tell the user the blocker in one sentence, run `orca-card.py blocked`, and stop.
 5. Spawn `dev-convention-learner` with `phase: implement` and `plan`.
 6. Tell the user what now works, with the evidence path from `VERIFIED`, and the next step: `/dev:3-review docs/plans/<slug>.md`.
 

@@ -57,7 +57,7 @@ The `dev:1-design` … `dev:full-dev-cycle` commands need the `agents/` (one fre
 | `/dev:1-design` | Fresh agent writes `docs/plans/<slug>.md`, asks you via a decision-tree HTML page |
 | `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
 | `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, HTML page |
-| `/dev:full-dev-cycle` | Design → implement → review → fix, each phase a fresh agent, moves the Orca card |
+| `/dev:full-dev-cycle` | Design ⏸ → implement → review ⏸ → fix, each phase a fresh agent, stops for you after design and review |
 | `/dev:learn-conventions` | Merge learned coding conventions into `.claude/conventions.md` |
 | `/dev:code-review` | Review the diff for correctness and quality (logic, readability, reuse, efficiency) |
 | `/dev:security-review` | Review for vulnerabilities (injection, secrets, auth gaps, CVEs, data exposure) |
@@ -83,7 +83,7 @@ The `dev:1-design` … `dev:full-dev-cycle` commands need the `agents/` (one fre
 claude-skills/
 ├── agents/                # Phase agents for dev: (designer, implementer, reviewer, convention-learner)
 ├── templates/dev/         # Decision page HTML + build-page.py
-├── scripts/dev/           # chrome-devtools-unlock.sh — fixes the locked MCP browser
+├── scripts/dev/           # ticket-source, orca-card, plan-status, decision-page, review-page, screen-css, chrome-devtools-unlock
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/

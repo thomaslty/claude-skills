@@ -26,9 +26,9 @@ Each phase runs in a fresh agent. You only step in on the HTML decision pages.
 | `/dev:1-design` | Plan in `docs/plans/`, decision-tree page for your picks |
 | `/dev:2-implement` | Follow the plan until every step is verified |
 | `/dev:3-review` | 4 lenses, T0 only, fix / skip page |
-| `/dev:full-dev-cycle [ticket]` | Design → implement → review → fix |
+| `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix |
 
-`[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket.
+`[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket. ⏸ = it stops and waits for you; the build never starts until you say go.
 | `/dev:learn-conventions` | Update `.claude/conventions.md` |
 
 ## Review

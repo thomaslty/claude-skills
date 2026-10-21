@@ -21,7 +21,8 @@ for nid, node in data["nodes"].items():
 
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
-LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70}
+LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 300}
+base = pathlib.Path(data_path).resolve().parent
 errors = []
 
 
@@ -48,8 +49,24 @@ def check_blocks(where, blocks):
                 for cell in row:
                     if len(cell) > LIMITS["cell"]:
                         errors.append(f"{at}: cell is {len(cell)} chars, max {LIMITS['cell']}: {cell[:40]!r}")
+        elif kind == "screen":
+            inline_screen(at, b)
         elif kind != "graph":
             errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table or graph")
+
+
+def inline_screen(at, screen):
+    """A screen points at a mock .html next to the JSON; its markup goes into the page."""
+    src = base / screen.get("src", "")
+    if not src.is_file():
+        errors.append(f"{at}: screen file not found: {src}")
+        return
+    if src.stat().st_size > LIMITS["screen_kb"] * 1024:
+        errors.append(f"{at}: screen {src.name} is over {LIMITS['screen_kb']} KB; inline no images")
+        return
+    if len(screen.get("caption", "")) > LIMITS["label"]:
+        errors.append(f"{at}: screen caption is over {LIMITS['label']} chars")
+    screen["html"] = src.read_text()
 
 
 if "summary" in data:
@@ -58,6 +75,8 @@ for nid, node in data["nodes"].items():
     if "context" in node:
         check_blocks(f"{nid}.context", node["context"])
     for opt in node.get("options", []):
+        if "screen" in opt:
+            inline_screen(f"{nid}.{opt['id']}.screen", opt["screen"])
         for key in ("label", "result"):
             if len(opt.get(key, "")) > LIMITS[key]:
                 errors.append(f"{nid}.{opt['id']}.{key} is {len(opt[key])} chars, max {LIMITS[key]}")

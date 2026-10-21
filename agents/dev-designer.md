@@ -127,6 +127,12 @@ The human answers on an HTML page instead of in the terminal. Each question is a
    - `summary` shows the whole design at a glance: the goal, a `graph` of the flow, and a `table` of the steps.
    - `context` carries a real file, line, or value from this codebase, so the human can decide without opening anything.
    - Option `label` ≤ 40 chars and `result` ≤ 70. The page draws the decision map from the tree for you.
+   - **Screens.** When the ticket adds or changes UI, draw it. A screen is one static HTML file in `docs/plans/<slug>-screens/`, like `upload.html`:
+     - Copy the look from the app's own code: its CSS variables, component class names, and layout. Cite where you took them from in an HTML comment at the top. If the UI code is not in this checkout (for example a git submodule that is not initialised), use a plain neutral style and say so in the plan.
+     - Use real field names, columns, and sample values from the code or the ticket. No lorem ipsum.
+     - Inline CSS only. No scripts, no external fonts or images. The page shows it in a sandbox, and the build rejects anything over 300 KB.
+     - Show the whole design in `summary` with `{"type": "screen", "src": "<slug>-screens/upload.html", "caption": "Upload", "height": 460}`.
+     - When the options of a question look different on screen, give each option its own `"screen": {"src": ..., "caption": ...}`. The page shows the screen of the picked option, so the human compares by clicking.
    - Mark the option you would pick as `recommended`. The page preselects it.
    - An "Other" option with a free-text box is added to every question for you.
 2. Build it: `python3 ~/.claude/templates/dev/build-page.py docs/plans/<slug>.decisions.json docs/plans/<slug>.decisions.html`

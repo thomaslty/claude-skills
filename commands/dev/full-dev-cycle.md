@@ -29,11 +29,27 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 5. Never switch branch, never commit, never push, never merge.
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
 7. Open every HTML page with `decision-page.py open <page>`, which puts it in a new Orca browser tab. Never `open <page>` yourself; the script falls back to the system browser only outside Orca.
+8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.
+
+## Other repos
+
+A ticket can need changes in a second repo, like OM.Robot next to Omega. Each extra repo gets its own worktree, and the ticket lists it.
+
+1. Already listed under the ticket's `## Repos` → reuse that worktree.
+2. Otherwise make one. Orca first: if `orca worktree current --json` answers, load the guide (`orca skills get orca-cli`) and use it:
+   - find the repo: `orca repo list --json`; missing → `orca repo add --path <its clone> --json`
+   - reuse a worktree already on the ticket's branch: `orca worktree list --repo id:<repoId> --json`
+   - else `orca worktree create --repo id:<repoId> --name <ticket-branch> --parent-worktree active --json`. Leave out `--base-branch`, so it starts from the repo's default base.
+   - take `path` and `branch` from the JSON. Later Orca calls name it `path:<abs path>`.
+3. No Orca → `git -C <its clone> worktree add <sibling dir> -b <ticket-branch>` from the repo's default base.
+4. Add it to the ticket under `## Repos` as a row: repo, worktree path, branch.
+
+Making a new worktree for another repo is allowed. Switching the branch of any existing checkout is not.
 
 ## When design is done
 
 1. `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`. The card gets the unread dot.
-2. Tell the user in two lines: the plan path, and "say go to build it, or tell me what to change".
+2. Tell the user in two lines: the plan path, and the next step by name: "next: `/dev:2-implement docs/plans/<slug>.md` — say go to run it, or tell me what to change".
 
 ## When done
 

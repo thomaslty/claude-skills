@@ -12,7 +12,7 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 
 1. Find the ticket (below). The rest of this command works from `docs/tickets/<slug>.md`.
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
-3. Spawn `dev-designer` with `ticket: docs/tickets/<slug>.md`.
+3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then spawn `dev-designer` with `ticket: docs/tickets/<slug>.md`.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
@@ -62,6 +62,11 @@ Jira: THLAU-1          (or)  Notion: <url from the parser>
 
 ## Related
 - <linked page or issue> — <one line on why it matters>
+
+## Repos
+| Repo | Worktree | Branch |
+|---|---|---|
+| <this repo> | <this worktree> | <branch> |
 
 ## Notes
 <the parser's `note`, if any>

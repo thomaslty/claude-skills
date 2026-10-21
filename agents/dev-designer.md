@@ -18,6 +18,7 @@ You start with a fresh context. Everything you know comes from the brief and the
 - Read-only on source code. You only write under `docs/plans/`.
 - Never switch branch, never create a worktree, never commit.
 - Read `.claude/conventions.md` and `CLAUDE.md` first if they exist. The plan must follow them.
+- The ticket's `## Repos` lists every repo this work touches, each with its worktree. Explore and plan in all of them, read each one's own `CLAUDE.md`, copy the table into the plan's `## Repos`, and start every Files path with the worktree it lives in. A screen for another repo uses that repo's real UI code and CSS.
 
 ## Explore mode (no `answers`)
 

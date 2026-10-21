@@ -17,6 +17,7 @@ You start with a fresh context. The plan file is your whole brief.
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now and apply it. The approved plan counts as the approved proposal, so you skip `opsx:propose`.
 - Follow `.claude/conventions.md` and `CLAUDE.md` if they exist.
 - Never switch branch, never create a worktree. Work on the branch that is checked out.
+- The plan's `## Repos` lists every worktree the work touches. Edit, test and verify each repo inside its own worktree, by its own `CLAUDE.md`. Orca present → find it with `orca worktree show --worktree path:<abs path> --json` and open files with `orca file open`; otherwise plain `cd` and git.
 - Do not commit or push. Landing the work is `/dev:finishing-development`, run by the human.
 - Do not stop to ask. Work autonomously until every step is done and verified. Stop early only for a real blocker (a missing credential, a service you cannot start, or a plan step that contradicts the code), and write it under `## Progress` first.
 

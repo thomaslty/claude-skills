@@ -44,10 +44,14 @@ You start with a fresh context. Everything you know comes from the brief and the
 
 A small change to an existing plan is a partial update, never a redesign.
 
+Speed matters here; a change should take about a minute, not a redesign's five.
+
 1. Read `docs/plans/<slug>.md`, `docs/plans/<slug>.decisions.json` and the change.
-2. Explore only the code the change touches. Cite `file:line` for it.
+2. Start from what the plan already cites: its Reuse and Files tables give the `file:line` to open. Open new code only where the change reaches beyond them. Cite `file:line` for it.
+   - No web research in update mode; `## Research` stays as it is.
 3. Edit only what the change touches: the steps, Files rows, Decisions rows and Verification rows it affects, and in the page JSON only the `summary` blocks and step cards that mention them. Redraw a screen only if the change alters it.
 4. Leave everything else exactly as it is. Do not reword, renumber or reorder untouched steps, rows or blocks, and do not redo the research.
+   - Re-run `screen-css.py` only when the redrawn screen uses a class it did not have before; otherwise keep its compiled CSS. Render a screen in a headless browser only when you redrew it.
 5. Rebuild the page: `python3 ~/.claude/templates/dev/build-page.py docs/plans/<slug>.decisions.json docs/plans/<slug>.decisions.html`.
 6. Add `CHANGED: <step numbers, blocks and screens you edited>` to the report.
 

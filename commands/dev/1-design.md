@@ -15,7 +15,7 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 3. Spawn `dev-designer` with `ticket: docs/tickets/<slug>.md`.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
-   - `STATUS: needs-decisions` → open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
+   - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
 5. Get the answers (below), then spawn a NEW `dev-designer` with `ticket` and `answers: <the JSON verbatim>`. Back to step 4.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `docs/plans/<slug>.md`.
 7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.

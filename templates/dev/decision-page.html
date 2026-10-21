@@ -37,6 +37,14 @@ h1 { font-size: 24px; margin: 0 0 4px; }
 .blocks li { margin: 2px 0; }
 pre.graph { font: 12.5px/1.45 ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
 pre.graph .on { color: var(--accent); font-weight: 700; }
+.blocks h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 8px; }
+.blocks h3:first-child { margin-top: 0; }
+.step { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 8px; }
+.step-head { margin: 0 0 4px; }
+.step-head .meta-line { color: var(--muted); font-size: 13px; }
+.step ul { margin: 0; padding-left: 18px; }
+.step li { margin: 2px 0; }
+.blocks code { font: 12.5px ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .tbl { overflow-x: auto; }
 .tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 .tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -170,8 +178,39 @@ function renderBlocks(blocks, into) {
       wrap.appendChild(t);
       into.appendChild(wrap);
     } else if (b.type === "graph") into.appendChild(el("pre", "graph", b.text));
+    else if (b.type === "heading") into.appendChild(el("h3", null, b.text));
+    else if (b.type === "steps") b.items.forEach(s => into.appendChild(renderStep(s)));
     else if (b.type === "screen") into.appendChild(renderScreen(b));
   }
+}
+
+// `code` and **bold** inside a step bullet, built as nodes so nothing is parsed as HTML.
+function inline(text) {
+  const span = el("span");
+  text.split(/(`[^`]+`|\*\*[^*]+\*\*)/).forEach(part => {
+    if (part.startsWith("`") && part.endsWith("`") && part.length > 1) span.appendChild(el("code", null, part.slice(1, -1)));
+    else if (part.startsWith("**") && part.endsWith("**") && part.length > 3) span.appendChild(el("b", null, part.slice(2, -2)));
+    else if (part) span.appendChild(document.createTextNode(part));
+  });
+  return span;
+}
+
+// /show-plan detail block: "**2. Title** `[ ]` · 45 min · after 1", then labelled one-line bullets.
+function renderStep(s) {
+  const box = el("div", "step"), head = el("p", "step-head");
+  head.appendChild(el("b", null, s.n + ". " + s.title));
+  const tail = [" " + s.status, s.effort, s.after ? "after " + s.after : null].filter(Boolean).join(" · ");
+  head.appendChild(el("span", "meta-line", tail));
+  box.appendChild(head);
+  const ul = el("ul");
+  s.bullets.forEach(([label, text]) => {
+    const li = el("li");
+    li.appendChild(el("b", null, label + ": "));
+    li.appendChild(inline(text));
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  return box;
 }
 
 // UI draft: a static HTML mock inlined by build-page.py, sandboxed so it cannot touch this page.

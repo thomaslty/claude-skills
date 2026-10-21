@@ -142,9 +142,18 @@ The human answers on an HTML page instead of in the terminal. Each question is a
 | `graph` | ASCII flow or call path | none |
 | `bullets` | facts that are not a table | ≤ 5, each ≤ 100 |
 | `text` | one line only | ≤ 120 chars |
+| `heading` | a section title in `summary` | ≤ 40 chars |
+| `steps` | `/show-plan` detail, one card per step | ≤ 5 bullets, each ≤ 140 |
 
    - `build-page.py` rejects anything over these limits and says why. Rewrite the content as a table or bullets; never split a paragraph to get under the limit.
-   - `summary` shows the whole design at a glance: the goal, a `graph` of the flow, a `table` of the steps, and a `table` of the `## Research` approaches.
+   - `summary` IS the `/show-plan` view of the plan. Read `~/.claude/commands/show-plan.md` and follow its Steps 3-6 and its Never list exactly, in this order, each under a `heading`:
+     1. `Goal` — one `text`: what is true when the plan is done; then one `text`: "0 of N steps done".
+     2. `System` — one `graph` per picture the plan needs (system, screen, or before/after; at most 3). Draw the system, not the schedule: real file, table and route names, labelled edges, counts outside the boxes, no durations, no step numbers, under 80 columns. Then one `text` with a real number.
+     3. `Steps` — a `table` with head `#`, `Step`, `Touches`, `Depends on`, `Effort`, `Status`. Every step, one row each, cells ≤ 30 chars, no lists inside a cell.
+     4. `Detail` — one `steps` block holding every step: `{"n": "1", "title": "Tenant check", "status": "[ ]", "effort": "30 min", "after": "1, 2", "bullets": [["Now", "..."], ["Fix", "..."], ["Real damage", "..."], ["Skip it", "..."]]}`. Labels are `Now`, `Fix`, `Real damage`, `Skip it` (or `Do`, `Verify`, `Test first` where those fit). Each bullet is one plain-English line with a real file:line, number or string; mark code with backticks and the one or two key numbers with `**`. Drop a bullet that has nothing real in it.
+     5. `Research` — a `table` of the `## Research` approaches.
+     6. Screens last, when the ticket has UI.
+   - FULL means full: every step of the plan appears in both the `Steps` table and the `Detail` block. No "and 4 more".
    - `context` carries a real file, line, or value from this codebase, so the human can decide without opening anything.
    - Option `label` ≤ 40 chars and `result` ≤ 70. The page draws the decision map from the tree for you.
    - **Screens.** When the ticket adds or changes UI, draw it. A screen is one static HTML file in `docs/plans/<slug>-screens/`, like `upload.html`. **Never invent a style.** Every screen uses the real project's look:

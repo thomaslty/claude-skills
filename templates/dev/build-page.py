@@ -21,7 +21,8 @@ for nid, node in data["nodes"].items():
 
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
-LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 1024}
+LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 1024,
+          "step_bullet": 140, "step_label": 14}
 base = pathlib.Path(data_path).resolve().parent
 errors = []
 
@@ -51,8 +52,32 @@ def check_blocks(where, blocks):
                         errors.append(f"{at}: cell is {len(cell)} chars, max {LIMITS['cell']}: {cell[:40]!r}")
         elif kind == "screen":
             inline_screen(at, b)
+        elif kind == "heading":
+            if len(b["text"]) > LIMITS["label"]:
+                errors.append(f"{at}: heading is over {LIMITS['label']} chars")
+        elif kind == "steps":
+            check_steps(at, b["items"])
         elif kind != "graph":
-            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table or graph")
+            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, heading, steps or screen")
+
+
+def check_steps(at, items):
+    """/show-plan detail: one card per step, header plus at most 5 one-line labelled bullets."""
+    for step in items:
+        name = f"{at} step {step.get('n')!r}"
+        for key in ("n", "title", "status", "effort"):
+            if not step.get(key):
+                errors.append(f"{name}: missing {key!r}")
+        if len(step.get("title", "")) > LIMITS["label"]:
+            errors.append(f"{name}: title is over {LIMITS['label']} chars")
+        bullets = step.get("bullets", [])
+        if not bullets or len(bullets) > LIMITS["bullets"]:
+            errors.append(f"{name}: {len(bullets)} bullets, need 1 to {LIMITS['bullets']}")
+        for label, text in bullets:
+            if len(label) > LIMITS["step_label"]:
+                errors.append(f"{name}: bullet label {label!r} is over {LIMITS['step_label']} chars")
+            if len(text) > LIMITS["step_bullet"]:
+                errors.append(f"{name}: bullet is {len(text)} chars, max {LIMITS['step_bullet']}: {text[:40]!r}")
 
 
 def inline_screen(at, screen):

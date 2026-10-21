@@ -1,7 +1,7 @@
 ---
 name: full-dev-cycle
-description: "Run design → implement → review end to end for one ticket, each phase in a fresh agent, stopping only for the decisions only you can make. Moves the Orca card through the board as it goes. Triggers on /dev:full-dev-cycle, 'run the full cycle', 'do this ticket end to end'. Launched for you by /dev:ticket start."
-argument-hint: "<docs/tickets/<slug>.md | requirement text>"
+description: "Run design → implement → review end to end for one ticket, each phase in a fresh agent, stopping only for the decisions only you can make. Moves the Orca card through the board as it goes. Triggers on /dev:full-dev-cycle, 'run the full cycle', 'do this ticket end to end'. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the Jira ticket Orca linked to this worktree."
+argument-hint: "[Jira URL/key | Notion URL | docs/tickets/<slug>.md | requirement text]"
 ---
 
 # Full Dev Cycle

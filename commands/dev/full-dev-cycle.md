@@ -28,6 +28,7 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 4. Fix → re-review runs at most 2 rounds. After that, show what is left and stop.
 5. Never switch branch, never commit, never push, never merge.
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
+7. Open every HTML page with `decision-page.py open <page>`, which puts it in a new Orca browser tab. Never `open <page>` yourself; the script falls back to the system browser only outside Orca.
 
 ## When design is done
 

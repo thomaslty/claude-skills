@@ -23,12 +23,20 @@ You start with a fresh context. Everything you know comes from the brief and the
 
 1. Read the ticket. Restate the goal in one sentence.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
-3. Check any library or API you plan to use against real docs (context7 or web search), not memory.
-4. Sort every open question into one of two buckets:
+3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
+4. **Search online for how this is usually done.** Always, every ticket. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options on the decision page.
+5. **Reuse first.** Prefer, in this order:
+   - what the project already has (step 3)
+   - a feature of a library already installed
+   - a new library, only when neither can do it
+
+   A new library always goes on the decision page as its own question. Its context says what it adds, why the installed libraries cannot do it, its size and licence, and its last release date.
+6. Check any library or API you plan to use against real docs (context7 or web search), not memory.
+7. Sort every open question into one of two buckets:
    - **You can answer it** from the code, the conventions, or a sensible default. Answer it and write the answer into the plan's Decisions table with the reason.
    - **Only the human can answer it**: product behaviour, a trade-off with a real cost either way, scope, or anything irreversible. These go on the decision page.
-5. Write `docs/plans/<slug>.md` in the plan format below, with `Status: draft`.
-6. If there is at least one human question, build the decision page (below). If there is none, set `Status: approved`.
+8. Write `docs/plans/<slug>.md` in the plan format below, with `Status: draft`.
+9. If there is at least one human question, build the decision page (below). If there is none, set `Status: approved`.
 
 ## Finalize mode (`answers` given)
 
@@ -46,6 +54,18 @@ Ticket: docs/tickets/<slug>.md
 
 ## Goal
 One sentence: what is true when this is done.
+
+## Research
+| Approach | Used by / source | Fits here? |
+|---|---|---|
+| <industry-standard approach> | <link> | <yes / no, one line> |
+
+## Reuse
+| Need | Existing piece | Where |
+|---|---|---|
+| <grid with row errors> | <LocalizedAgGrid> | <libs/ag-grid/...> |
+
+New libraries: none (or each one, with the reason the installed ones cannot do it).
 
 ## Decisions
 | Question | Picked | Why |
@@ -124,7 +144,7 @@ The human answers on an HTML page instead of in the terminal. Each question is a
 | `text` | one line only | ≤ 120 chars |
 
    - `build-page.py` rejects anything over these limits and says why. Rewrite the content as a table or bullets; never split a paragraph to get under the limit.
-   - `summary` shows the whole design at a glance: the goal, a `graph` of the flow, and a `table` of the steps.
+   - `summary` shows the whole design at a glance: the goal, a `graph` of the flow, a `table` of the steps, and a `table` of the `## Research` approaches.
    - `context` carries a real file, line, or value from this codebase, so the human can decide without opening anything.
    - Option `label` ≤ 40 chars and `result` ≤ 70. The page draws the decision map from the tree for you.
    - **Screens.** When the ticket adds or changes UI, draw it. A screen is one static HTML file in `docs/plans/<slug>-screens/`, like `upload.html`. **Never invent a style.** Every screen uses the real project's look:
@@ -155,4 +175,6 @@ STEPS: <n>
 DECIDED: <n decisions you made yourself>
 ASKING: <n questions on the page>
 SCREENS: <n drawn> | missing <what>
+RESEARCH: <n sources>
+NEW LIBS: none | <names, each on the page>
 ```

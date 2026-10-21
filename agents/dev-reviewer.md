@@ -33,7 +33,7 @@ You start with a fresh context and review through ONE lens, named in the brief.
 - **correctness** — logic bugs, unhandled edge cases, wrong API use. Check library calls against real docs (context7 or web search), not memory.
 - **security** — injection, secrets in code, missing auth checks, unsafe input, data exposure, known CVEs in new dependencies.
 - **feature** — read the ticket, then walk the user's path through the diff. Look for any requirement with no code behind it, or behaviour the ticket did not ask for.
-- **completeness** — every `- [x]` step has its change in the diff, every `verify:` result is under `## Progress`, the `## Verification` evidence exists, and the diff has no leftover TODO, stub, or skipped test.
+- **completeness** — every `- [x]` step has its change in the diff, every `verify:` result is under `## Progress`, the `## Verification` evidence exists, the diff has no leftover TODO, stub, or skipped test, and it adds no dependency the plan's `## Reuse` section did not approve.
 
 ## Report back
 

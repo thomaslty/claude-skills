@@ -41,13 +41,14 @@ pre.graph .on { color: var(--accent); font-weight: 700; }
 .screen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
 .screen-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .screen-bar button { padding: 3px 10px; font-size: 12px; background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-.screen iframe { display: block; width: 100%; border: 0; background: #fff; }
+.screen .vp { position: relative; overflow: hidden; }
+.screen iframe { display: block; border: 0; background: #fff; transform-origin: 0 0; position: absolute; top: 0; left: 0; }
 .opt-screen { margin: 4px 0 10px; }
 .opt-screen .via { margin-bottom: 4px; }
 #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10; padding: 24px; }
 #modal.show { display: flex; flex-direction: column; }
 #modal .screen { flex: 1; display: flex; flex-direction: column; }
-#modal iframe { flex: 1; height: auto; }
+#modal .vp { flex: 1; }
 .tbl code, .blocks code { font: 12.5px ui-monospace, Menlo, monospace; }
 .node { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 0 0 12px; }
 .branch { margin-left: 22px; padding-left: 16px; border-left: 2px solid var(--accent); }
@@ -159,12 +160,24 @@ function renderScreen(b, big) {
     else { m.innerHTML = ""; m.appendChild(renderScreen(b, true)); m.classList.add("show"); }
   });
   bar.appendChild(btn);
-  const f = el("iframe");
+  // Render at the app's real viewport, then scale to fit, so the layout is the one the app draws.
+  const W = b.width || 1440, H = b.height || 900;
+  const vp = el("div", "vp"), f = el("iframe");
   f.setAttribute("sandbox", "");
   f.srcdoc = b.html;
-  if (!big) f.style.height = (b.height || 420) + "px";
+  f.style.width = W + "px";
+  f.style.height = H + "px";
+  vp.appendChild(f);
+  const fit = () => {
+    const room = vp.clientWidth || W;
+    const k = Math.min(1, room / W, big ? (vp.parentElement.clientHeight - 40) / H : 1);
+    f.style.transform = "scale(" + k + ")";
+    if (!big) vp.style.height = Math.round(H * k) + "px";
+  };
+  new ResizeObserver(fit).observe(vp);
   box.appendChild(bar);
-  box.appendChild(f);
+  box.appendChild(vp);
+  requestAnimationFrame(fit);
   return box;
 }
 

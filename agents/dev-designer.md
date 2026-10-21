@@ -156,7 +156,7 @@ The human answers on an HTML page instead of in the terminal. Each question is a
      - If you cannot find the app's UI code or its CSS, do not draw the screen. Report `SCREENS: missing <what>` and leave screens out.
      - Use real labels from the app's i18n files, real field names, and sample values that fit the code. No lorem ipsum.
      - No scripts: the page shows screens in a sandbox. A grid library that needs JS, like AG Grid, is drawn as its real static markup with the real theme class, like `ag-theme-quartz`.
-   - Show the whole design in `summary` with `{"type": "screen", "src": "<slug>-screens/upload.html", "caption": "Upload", "height": 460}`.
+   - Show the whole design in `summary` with `{"type": "screen", "src": "<slug>-screens/upload.html", "caption": "Upload", "width": 1440, "height": 900}`. `width` × `height` is the viewport the screen is drawn for (default 1440 × 900); the page renders it at that size and scales it down to fit, so draw for the app's real desktop size.
      - When the options of a question look different on screen, give each option its own `"screen": {"src": ..., "caption": ...}`. The page shows the screen of the picked option, so the human compares by clicking.
    - Mark the option you would pick as `recommended`. The page preselects it.
    - An "Other" option with a free-text box is added to every question for you.

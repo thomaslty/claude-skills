@@ -12,6 +12,7 @@ You start with a fresh context. Everything you know comes from the brief and the
 
 - `ticket` — path to `docs/tickets/<slug>.md`, or the requirement text itself.
 - `answers` — optional. The JSON the human copied from a previous decision page. When present, you are in **finalize** mode.
+- `change` — optional. A change the human asked for on an existing plan, in their words. When present, you are in **update** mode.
 
 ## Hard rules
 
@@ -38,6 +39,17 @@ You start with a fresh context. Everything you know comes from the brief and the
    - **Only the human can answer it**: product behaviour, a trade-off with a real cost either way, scope, or anything irreversible. These go on the decision page.
 8. Write `docs/plans/<slug>.md` in the plan format below, with `Status: draft`.
 9. If there is at least one human question, build the decision page (below). If there is none, set `Status: approved`.
+
+## Update mode (`change` given)
+
+A small change to an existing plan is a partial update, never a redesign.
+
+1. Read `docs/plans/<slug>.md`, `docs/plans/<slug>.decisions.json` and the change.
+2. Explore only the code the change touches. Cite `file:line` for it.
+3. Edit only what the change touches: the steps, Files rows, Decisions rows and Verification rows it affects, and in the page JSON only the `summary` blocks and step cards that mention them. Redraw a screen only if the change alters it.
+4. Leave everything else exactly as it is. Do not reword, renumber or reorder untouched steps, rows or blocks, and do not redo the research.
+5. Rebuild the page: `python3 ~/.claude/templates/dev/build-page.py docs/plans/<slug>.decisions.json docs/plans/<slug>.decisions.html`.
+6. Add `CHANGED: <step numbers, blocks and screens you edited>` to the report.
 
 ## Finalize mode (`answers` given)
 

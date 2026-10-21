@@ -14,7 +14,20 @@ Display this reference card when invoked. One-shot — do NOT change mode or per
 | `/dev:development-guideline` | The methodology: propose → apply → archive, TDD, VDD, visual confirm |
 | `/dev:parallel-development` | Multiple proposals at once: worktree + sub-agent each, main session integrates |
 | `/dev:finishing-development` | Archive, commit & push current, merge into target branch |
-| `/dev:full-development-cycle` | Orchestrates the three above end to end |
+
+## Autonomous cycle
+
+Each phase runs in a fresh agent. You only step in on the HTML decision pages.
+
+| Command | What it does |
+|---|---|
+| `/dev:ticket new <slug>` | Orca card in Todo + worktree + `docs/tickets/<slug>.md` |
+| `/dev:ticket start <slug>` | Card to In Progress, Claude runs the full cycle there |
+| `/dev:1-design` | Plan in `docs/plans/`, decision-tree page for your picks |
+| `/dev:2-implement` | Follow the plan until every step is verified |
+| `/dev:3-review` | 4 lenses, T0 only, fix / skip page |
+| `/dev:full-dev-cycle` | Design → implement → review → fix |
+| `/dev:learn-conventions` | Update `.claude/conventions.md` |
 
 ## Review
 

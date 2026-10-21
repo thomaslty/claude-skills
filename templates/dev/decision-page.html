@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Page</title>
+<style>
+:root {
+  --bg: #f7f6f3; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e1db;
+  --accent: #2f5fd0; --accent-soft: #e8eefc; --ok: #1f7a4d; --warn: #b5541c; --t0: #b42318; --t0-soft: #fdecea;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151514; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9b9a94; --line: #34332f;
+    --accent: #7ea2ff; --accent-soft: #232c45; --ok: #5cc493; --warn: #f0a46b; --t0: #ff8a80; --t0-soft: #3a1f1d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151514; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9b9a94; --line: #34332f;
+  --accent: #7ea2ff; --accent-soft: #232c45; --ok: #5cc493; --warn: #f0a46b; --t0: #ff8a80; --t0-soft: #3a1f1d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 32px 16px 160px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+.summary { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.map { margin-bottom: 24px; }
+.map h2, .summary h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+.blocks > * { margin: 0 0 10px; }
+.blocks > *:last-child { margin-bottom: 0; }
+.blocks p { margin: 0 0 10px; }
+.blocks ul { padding-left: 20px; }
+.blocks li { margin: 2px 0; }
+pre.graph { font: 12.5px/1.45 ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+pre.graph .on { color: var(--accent); font-weight: 700; }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.tbl code, .blocks code { font: 12.5px ui-monospace, Menlo, monospace; }
+.node { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 0 0 12px; }
+.branch { margin-left: 22px; padding-left: 16px; border-left: 2px solid var(--accent); }
+.via { font-size: 12px; color: var(--accent); margin: 0 0 6px; }
+.node h2 { font-size: 16px; margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.tag.T0 { background: var(--t0-soft); color: var(--t0); }
+.where { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+.context { color: var(--ink); margin: 0 0 12px; }
+.opt { display: block; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 8px; cursor: pointer; }
+.opt:hover { border-color: var(--accent); }
+.opt.on { border-color: var(--accent); background: var(--accent-soft); }
+.opt input { margin-right: 8px; }
+.opt .label { font-weight: 600; }
+.opt .rec { font-size: 11px; color: var(--ok); margin-left: 6px; }
+.opt .result { display: block; color: var(--muted); font-size: 13px; margin: 2px 0 0 24px; }
+.opt .result::before { content: "→ "; }
+textarea, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+textarea { min-height: 54px; resize: vertical; }
+.other-text { margin-top: 6px; }
+.comment { margin-top: 8px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 12px 16px; }
+.bar-inner { max-width: 860px; margin: 0 auto; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.progress { flex: 1; min-width: 160px; }
+.track { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.fill { height: 100%; background: var(--ok); width: 0; transition: width .2s; }
+.count { font-size: 12px; color: var(--muted); margin-top: 4px; }
+button { font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 10px 18px; background: var(--accent); color: #fff; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+#out { display: none; margin-top: 10px; font: 12px ui-monospace, Menlo, monospace; min-height: 140px; }
+#out.show { display: block; }
+.general { margin: 24px 0 0; }
+.general h2 { font-size: 15px; margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <div class="meta" id="meta"></div>
+  <div class="summary" id="summary"><h2>Overview</h2><div class="blocks" id="summary-blocks"></div></div>
+  <div class="summary map"><h2>Decision map</h2><pre class="graph" id="map"></pre></div>
+  <div id="tree"></div>
+  <div class="general node">
+    <h2>Anything else?</h2>
+    <textarea id="general" placeholder="Free comment for the agent"></textarea>
+  </div>
+</main>
+<div class="bar"><div class="bar-inner">
+  <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><div class="count" id="count"></div></div>
+  <button class="ghost" id="show">Show JSON</button>
+  <button id="copy">Copy response JSON</button>
+  <textarea id="out" readonly></textarea>
+</div></div>
+
+<script id="page-data" type="application/json">__PAGE_DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById("page-data").textContent);
+const OTHER = "__other";
+const state = {};    // nodeId -> { choice, other, comment }
+
+for (const [id, n] of Object.entries(DATA.nodes)) {
+  const rec = (n.options || []).find(o => o.recommended);
+  state[id] = { choice: rec ? rec.id : null, other: "", comment: "" };
+}
+
+document.title = DATA.title || "Decision Page";
+document.getElementById("title").textContent = DATA.title || "";
+document.getElementById("meta").textContent = [DATA.kind, DATA.ticket, DATA.plan].filter(Boolean).join("  ·  ");
+if (DATA.summary) renderBlocks(DATA.summary, document.getElementById("summary-blocks"));
+else document.getElementById("summary").remove();
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+// Structured content only: text (one line), bullets, table, graph (ASCII).
+function renderBlocks(blocks, into) {
+  for (const b of [].concat(blocks)) {
+    if (b.type === "text") into.appendChild(el("p", null, b.text));
+    else if (b.type === "bullets") {
+      const ul = el("ul");
+      b.items.forEach(i => ul.appendChild(el("li", null, i)));
+      into.appendChild(ul);
+    } else if (b.type === "table") {
+      const wrap = el("div", "tbl"), t = el("table"), hr = el("tr");
+      b.head.forEach(h => hr.appendChild(el("th", null, h)));
+      t.appendChild(el("thead")).appendChild(hr);
+      const tb = t.appendChild(el("tbody"));
+      b.rows.forEach(r => { const tr = el("tr"); r.forEach(c => tr.appendChild(el("td", null, c))); tb.appendChild(tr); });
+      wrap.appendChild(t);
+      into.appendChild(wrap);
+    } else if (b.type === "graph") into.appendChild(el("pre", "graph", b.text));
+  }
+}
+
+// ASCII map of the whole tree; the picked path is highlighted.
+function renderMap() {
+  const pre = document.getElementById("map");
+  pre.innerHTML = "";
+  const line = (text, on) => { const s = el("span", on ? "on" : null, text); pre.appendChild(s); pre.appendChild(document.createTextNode("\n")); };
+  const walk = (id, pad, seen) => {
+    const n = DATA.nodes[id];
+    if (!n || seen.has(id)) return;
+    seen.add(id);
+    line(pad + "◆ " + n.title, true);
+    const opts = n.options || [];
+    opts.forEach((o, i) => {
+      const last = i === opts.length - 1, on = state[id].choice === o.id;
+      const nexts = o.next ? [].concat(o.next) : [];
+      line(pad + (last ? "└─ " : "├─ ") + (on ? "● " : "○ ") + o.label + (nexts.length ? "  →" : ""), on);
+      nexts.forEach(nx => walk(nx, pad + (last ? "   " : "│  ") + "   ", seen));
+    });
+  };
+  (DATA.roots || []).forEach(r => walk(r, "", new Set()));
+}
+
+// The visible path: every root, then the `next` node of each chosen option, recursively.
+function visible() {
+  const out = [];
+  const walk = (id, depth, via, seen) => {
+    const n = DATA.nodes[id];
+    if (!n || seen.has(id)) return;
+    seen.add(id);
+    out.push({ id, depth, via });
+    const s = state[id];
+    const opt = (n.options || []).find(o => o.id === s.choice);
+    if (opt && opt.next) [].concat(opt.next).forEach(nx => walk(nx, depth + 1, opt.label, seen));
+  };
+  (DATA.roots || []).forEach(r => walk(r, 0, null, new Set()));
+  return out;
+}
+
+function renderNode(id, via) {
+  const n = DATA.nodes[id], s = state[id];
+  const box = el("div", "node");
+  if (via) box.appendChild(el("div", "via", "because you picked: " + via));
+  const h = el("h2");
+  h.appendChild(el("span", null, n.title));
+  if (n.severity) h.appendChild(el("span", "tag " + n.severity, n.severity));
+  if (n.where) h.appendChild(el("span", "where", n.where));
+  box.appendChild(h);
+  if (n.context) { const c = el("div", "context blocks"); renderBlocks(n.context, c); box.appendChild(c); }
+
+  const opts = (n.options || []).concat([{ id: OTHER, label: "Other", result: "Write your own answer below" }]);
+  for (const o of opts) {
+    const lab = el("label", "opt" + (s.choice === o.id ? " on" : ""));
+    const r = el("input"); r.type = "radio"; r.name = "n-" + id; r.checked = s.choice === o.id;
+    r.addEventListener("change", () => { s.choice = o.id; render(); });
+    lab.appendChild(r);
+    lab.appendChild(el("span", "label", o.label));
+    if (o.recommended) lab.appendChild(el("span", "rec", "recommended"));
+    if (o.result) lab.appendChild(el("span", "result", o.result));
+    box.appendChild(lab);
+  }
+  if (s.choice === OTHER) {
+    const t = el("input", "other-text"); t.type = "text"; t.placeholder = "Your answer"; t.value = s.other;
+    t.addEventListener("input", () => { s.other = t.value; update(); });
+    box.appendChild(t);
+  }
+  const c = el("textarea", "comment"); c.placeholder = "Comment (optional)"; c.value = s.comment;
+  c.addEventListener("input", () => { s.comment = c.value; update(); });
+  box.appendChild(c);
+  return box;
+}
+
+function render() {
+  const tree = document.getElementById("tree");
+  tree.innerHTML = "";
+  const stack = [tree];
+  for (const v of visible()) {
+    while (stack.length > v.depth + 1) stack.pop();
+    let parent = stack[stack.length - 1];
+    if (v.depth > 0 && stack.length === v.depth) {
+      const b = el("div", "branch");
+      parent.appendChild(b);
+      stack.push(b);
+      parent = b;
+    }
+    parent.appendChild(renderNode(v.id, v.via));
+  }
+  update();
+}
+
+function response() {
+  const answers = visible().map(({ id }) => {
+    const n = DATA.nodes[id], s = state[id];
+    const o = (n.options || []).find(x => x.id === s.choice);
+    return {
+      node: id,
+      title: n.title,
+      choice: s.choice,
+      label: s.choice === OTHER ? "Other" : (o ? o.label : null),
+      other: s.choice === OTHER ? s.other : undefined,
+      comment: s.comment || undefined,
+    };
+  });
+  return {
+    page: DATA.kind, ticket: DATA.ticket, plan: DATA.plan,
+    answers, comment: document.getElementById("general").value || undefined,
+  };
+}
+
+function update() {
+  renderMap();
+  const v = visible();
+  const done = v.filter(({ id }) => state[id].choice && (state[id].choice !== OTHER || state[id].other)).length;
+  document.getElementById("fill").style.width = (v.length ? 100 * done / v.length : 100) + "%";
+  document.getElementById("count").textContent = done + " of " + v.length + " answered";
+  document.getElementById("out").value = JSON.stringify(response(), null, 2);
+}
+
+document.getElementById("general").addEventListener("input", update);
+document.getElementById("show").addEventListener("click", () => document.getElementById("out").classList.toggle("show"));
+document.getElementById("copy").addEventListener("click", async () => {
+  const text = JSON.stringify(response(), null, 2);
+  const btn = document.getElementById("copy");
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const out = document.getElementById("out");
+    out.classList.add("show"); out.value = text; out.select(); document.execCommand("copy");
+  }
+  btn.textContent = "Copied — paste it into the terminal";
+  setTimeout(() => { btn.textContent = "Copy response JSON"; }, 2500);
+});
+
+render();
+</script>
+</body>
+</html>

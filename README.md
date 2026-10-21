@@ -32,7 +32,12 @@ cp commands/show-plan.md ~/.claude/commands/show-plan.md
 cp commands/fable-design-opus-execute.md ~/.claude/commands/fable-design-opus-execute.md
 cp -r commands/dev ~/.claude/commands/dev
 cp -r commands/hfv ~/.claude/commands/hfv
+cp agents/*.md ~/.claude/agents/
+mkdir -p ~/.claude/templates && cp -r templates/dev ~/.claude/templates/dev
+mkdir -p ~/.claude/scripts && cp -r scripts/dev ~/.claude/scripts/dev
 ```
+
+The `dev:1-design` … `dev:full-dev-cycle` commands need the `agents/` (one fresh agent per phase) and `templates/dev/` (the decision page) copies too.
 
 | Command | Description |
 |---------|-------------|
@@ -48,7 +53,12 @@ cp -r commands/hfv ~/.claude/commands/hfv
 | `/dev:development-guideline` | Mandatory methodology — proposal-driven, TDD backend, visual-driven frontend |
 | `/dev:parallel-development` | Build multiple proposals at once via per-worktree parallel sub-agents |
 | `/dev:finishing-development` | Archive change, commit, push, then merge back into the target branch |
-| `/dev:full-development-cycle` | End-to-end: proposal → implementation → merged and pushed |
+| `/dev:ticket` | Orca board ticket — `new` makes a card + worktree, `start` launches Claude on it |
+| `/dev:1-design` | Fresh agent writes `docs/plans/<slug>.md`, asks you via a decision-tree HTML page |
+| `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
+| `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, HTML page |
+| `/dev:full-dev-cycle` | Design → implement → review → fix, each phase a fresh agent, moves the Orca card |
+| `/dev:learn-conventions` | Merge learned coding conventions into `.claude/conventions.md` |
 | `/dev:code-review` | Review the diff for correctness and quality (logic, readability, reuse, efficiency) |
 | `/dev:security-review` | Review for vulnerabilities (injection, secrets, auth gaps, CVEs, data exposure) |
 | `/dev:simplify` | Review for over-engineering — what to delete or replace with stdlib |
@@ -71,6 +81,9 @@ cp -r commands/hfv ~/.claude/commands/hfv
 
 ```
 claude-skills/
+├── agents/                # Phase agents for dev: (designer, implementer, reviewer, convention-learner)
+├── templates/dev/         # Decision page HTML + build-page.py
+├── scripts/dev/           # chrome-devtools-unlock.sh — fixes the locked MCP browser
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/
@@ -84,7 +97,12 @@ claude-skills/
     │   ├── development-guideline.md
     │   ├── parallel-development.md
     │   ├── finishing-development.md
-    │   ├── full-development-cycle.md
+    │   ├── ticket.md
+    │   ├── 1-design.md
+    │   ├── 2-implement.md
+    │   ├── 3-review.md
+    │   ├── full-dev-cycle.md
+    │   ├── learn-conventions.md
     │   ├── code-review.md
     │   ├── security-review.md
     │   ├── simplify.md

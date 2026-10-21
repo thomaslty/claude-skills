@@ -57,6 +57,20 @@ Build the interface, render it, and iterate against what you actually see — no
 
 **Headed mode is the default, not an escape hatch.** chrome-devtools drives a real headed Chrome you (and the user) can watch: its a11y-tree snapshots (`take_snapshot`) give direct element control and state verification without a screenshot+read round-trip per action. Use text snapshots to iterate; reserve `take_screenshot` for visual design checks and for the final visual-confirmation evidence.
 
+### When chrome-devtools will not start
+
+`The browser is already running for …/chrome-devtools-mcp/chrome-profile` means another Chrome holds the MCP's shared profile. You do not skip the check, and you do not fall back to playwright or a headless script. You fix it, then use chrome-devtools:
+
+1. Run `~/.claude/scripts/dev/chrome-devtools-unlock.sh`. It turns on `--isolated` in the plugin's `.claude-plugin/plugin.json`, so every new session gets its own profile, and it prints who holds the profile now. Plugin updates undo the flag, so run it every time.
+2. `orphan` or `this session's own` → run it again with `--kill`.
+3. `another live session` → do not kill it. Ask the user once: close that session's browser, or restart this session (a new session starts with `--isolated`).
+4. Retry the chrome-devtools call. If the tools still fail, reconnect this session's MCP through Orca:
+   - `orca terminal send --terminal "$ORCA_TERMINAL_HANDLE" --text "/mcp" --enter`
+   - read the menu with `orca terminal read --terminal "$ORCA_TERMINAL_HANDLE" --screen --json`
+   - send `$'\e[B'` (arrow down) until `❯` is on `plugin:chrome-devtools-mcp:chrome-devtools`, then `$'\r'` twice to pick `Reconnect`
+
+Never stop Chrome or an MCP server with `pkill` by name. That once killed another session's browser. Kill only the exact PID the script prints.
+
 ## The Visual-Confirmation Mandate (non-negotiable)
 
 "It compiles", "tests pass", and "the code looks correct" are not visual confirmation.
@@ -90,6 +104,7 @@ For UI: screenshot via chrome-devtools (`take_screenshot`) driving headed Chrome
 | "Backend has no UI" | Show real response from running app |
 | "Verified in a prior run" | Each change needs its own proof |
 | "Confirm before merge later" | Unconfirmed = not done; no merge |
+| "chrome-devtools is locked, use a script" | Unlock it, see above |
 
 ## Cross-References
 

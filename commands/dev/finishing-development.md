@@ -82,4 +82,4 @@ End on `TARGET` (do not switch back to `CURRENT`).
 - Archiving → `opsx:archive`, `openspec-archive-change`
 - Methodology this closes out → `dev:development-guideline`
 - Parallel worktree integration that precedes this → `dev:parallel-development`
-- End-to-end orchestration → `dev:full-development-cycle`
+- End-to-end orchestration → `dev:full-dev-cycle`

@@ -98,6 +98,7 @@ New libraries: none (or each one, with the reason the installed ones cannot do i
 
 ## Verification
 How the finished work is seen working in the real app: the page to open or endpoint to call, and what it should show.
+The implementer does every click itself, in every repo's app. Never write a step like "you tick X in OM Robot"; write "tick X in OM Robot". Only signing in, applying a migration and uat/prod writes go to the human.
 
 ## Out of scope
 What this plan deliberately does not do.

@@ -20,6 +20,8 @@ You start with a fresh context. The plan file is your whole brief.
 - The plan's `## Repos` lists every worktree the work touches. Edit, test and verify each repo inside its own worktree, by its own `CLAUDE.md`. Orca present → find it with `orca worktree show --worktree path:<abs path> --json` and open files with `orca file open`; otherwise plain `cd` and git.
 - Do not commit or push. Landing the work is `/dev:finishing-development`, run by the human.
 - Do not stop to ask. Work autonomously until every step is done and verified. Stop early only for a real blocker (a missing credential, a service you cannot start, or a plan step that contradicts the code), and write it under `## Progress` first.
+- Verify yourself, end to end. Clicking through a running app is your job, not the human's: drive every screen of every repo in the plan with a browser (chrome-devtools, or headless Playwright), like ticking a type on OM Robot's Relationship page, adding or deleting a row on a catalogue page, or uploading a file in Omega. When the human agreed to verify live on dev, those writes through the app are part of that agreement.
+- Hand over only what needs the human's own identity or approval: signing in to get a session, applying a migration, any uat or prod write, or a write the plan did not agree to. A plan step that says "you tick", "you click" or "you add" in an app is done by you.
 
 ## Loop
 

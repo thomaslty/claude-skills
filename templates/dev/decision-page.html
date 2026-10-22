@@ -39,6 +39,9 @@ pre.graph { font: 12.5px/1.45 ui-monospace, Menlo, monospace; background: var(--
 pre.graph .on { color: var(--accent); font-weight: 700; }
 .blocks h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 8px; }
 .blocks h3:first-child { margin-top: 0; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+dl.facts dt { font-weight: 600; color: var(--muted); }
+dl.facts dd { margin: 0; }
 .step { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 8px; }
 .step-head { margin: 0 0 4px; }
 .step-head .meta-line { color: var(--muted); font-size: 13px; }
@@ -182,6 +185,11 @@ function renderBlocks(blocks, into) {
     } else if (b.type === "graph") into.appendChild(el("pre", "graph", b.text));
     else if (b.type === "heading") into.appendChild(el("h3", null, b.text));
     else if (b.type === "steps") b.items.forEach(s => into.appendChild(renderStep(s)));
+    else if (b.type === "facts") {
+      const dl = el("dl", "facts");
+      b.items.forEach(([label, text]) => { dl.appendChild(el("dt", null, label)); const dd = el("dd"); dd.appendChild(inline(text)); dl.appendChild(dd); });
+      into.appendChild(dl);
+    }
     else if (b.type === "screen") into.appendChild(renderScreen(b));
   }
 }

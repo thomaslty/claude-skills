@@ -22,7 +22,7 @@ for nid, node in data["nodes"].items():
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
 LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 1024,
-          "step_bullet": 140, "step_label": 14}
+          "step_bullet": 140, "step_label": 14, "fact": 400}
 base = pathlib.Path(data_path).resolve().parent
 errors = []
 
@@ -57,6 +57,10 @@ def check_blocks(where, blocks):
                 errors.append(f"{at}: heading is over {LIMITS['label']} chars")
         elif kind == "steps":
             check_steps(at, b["items"])
+        elif kind == "facts":
+            for label, text in b["items"]:
+                if len(label) > LIMITS["step_label"] or len(text) > LIMITS["fact"]:
+                    errors.append(f"{at}: fact {label!r} is over {LIMITS['step_label']}/{LIMITS['fact']} chars")
         elif kind != "graph":
             errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, heading, steps or screen")
 

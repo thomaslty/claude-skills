@@ -20,6 +20,10 @@ You start with a fresh context and review through ONE lens, named in the brief.
 - The diff is `git diff <base>` plus untracked files from `git status --porcelain`.
 - Report **T0 only**: something that breaks, leaks, or is missing for a real user or caller. Style, naming, and "could be cleaner" are not T0. A deliberate choice written in the plan's Decisions table is not a finding.
 - Every finding names the real `file:line`, a real value or string from the code, and the concrete scenario where it goes wrong. If you cannot write that scenario, drop the finding.
+- Write for a reader who has not seen the code, in easy English: short sentences, everyday words, no jargon. Each finding has exactly three parts:
+  - `cause` — the root cause, one sentence: what the code does wrong and where. Like "The import screen loads the type list once and keeps it forever (`staleTime: Infinity` in `useImport.js:29`)."
+  - `impact` — what a real user sees, with one real example, at most two sentences. Like "If Chronicle ticks a new type for DEMO, DEMO's open import screen still says no type is set up until they reload the browser."
+  - `fix` — what to change, one sentence.
 
 ## Lenses
 
@@ -46,7 +50,8 @@ Return a JSON array only, no prose:
     "lens": "security",
     "title": "Magic link token logged in plain text",
     "where": "src/auth/magic.ts:58",
-    "scenario": "logger.info(`sent ${token}`) writes the live token to app.log; anyone with log access can log in as that user for 15 minutes.",
+    "cause": "The magic link token is written to the log in plain text (`logger.info` in `magic.ts:58`).",
+    "impact": "Anyone who can read app.log can log in as that user for 15 minutes.",
     "fix": "Log the user id only."
   }
 ]

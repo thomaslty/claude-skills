@@ -18,19 +18,6 @@ import subprocess
 import sys
 
 LENSES = ["correctness", "security", "feature", "completeness"]
-BULLET = 100
-
-
-def wrap(label, text):
-    """Bullets of at most BULLET chars, split on sentences then words."""
-    out, line = [], f"{label}: "
-    for word in " ".join(text.split()).split(" "):
-        if len(line) + len(word) + 1 > BULLET:
-            out.append(line.rstrip())
-            line = "  "
-        line += word + " "
-    out.append(line.rstrip())
-    return out
 
 
 def main():
@@ -49,8 +36,9 @@ def main():
             if key in merged:
                 m = merged[key]
                 m["lenses"] = sorted(set(m["lenses"]) | {f["lens"]}, key=LENSES.index)
-                if f["scenario"] not in m["scenario"]:
-                    m["scenario"] += " / " + f["scenario"]
+                for part in ("cause", "impact", "scenario"):
+                    if f.get(part) and f[part] not in m.get(part, ""):
+                        m[part] = (m[part] + " / " if m.get(part) else "") + f[part]
             else:
                 merged[key] = {**f, "lenses": [f["lens"]]}
     findings = list(merged.values())
@@ -60,15 +48,15 @@ def main():
 
     nodes = {}
     for f in findings:
-        bullets = wrap("what", f["scenario"]) + wrap("fix", f.get("fix", ""))
+        # Root cause and impact in the reviewer's own words, uncut; older outputs only have `scenario`.
+        facts = ([["Root cause", f["cause"]], ["Impact", f["impact"]]] if f.get("cause")
+                 else [["What", f.get("scenario", "")]])
+        facts += [["Fix", f.get("fix", "")], ["Lens", ", ".join(f["lenses"])]]
         nodes[f["id"]] = {
             "title": f["title"][:120],
             "severity": "T0",
             "where": f["where"],
-            "context": [
-                {"type": "table", "head": ["Lens", "Where"], "rows": [[", ".join(f["lenses"])[:40], f["where"][:40]]]},
-                {"type": "bullets", "items": bullets[:5]},
-            ],
+            "context": [{"type": "facts", "items": [x for x in facts if x[1]]}],
             "options": [
                 {"id": "fix", "label": "Fix it", "result": "implementer applies the fix", "recommended": True},
                 {"id": "skip", "label": "Skip", "result": "kept as is, noted in the plan"},

@@ -61,13 +61,14 @@ If there is an active, fully-implemented OpenSpec change, archive it with `opsx:
 
 ## Step 3 — Land each repo, in order
 
-For each repo, do exactly what its `finishing-development.md` says: commit, push, merge or PR, and the follow-ups. When it says merge:
+For each repo, do exactly what its `finishing-development.md` says: commit, push, merge or PR, and the follow-ups. When it says merge, build the merge commit without switching branch: never `git checkout` the target (it is often checked out in another worktree, and switching is forbidden).
 
 ```bash
-git checkout "$TARGET"
-git pull --ff-only origin "$TARGET"   # only if origin/$TARGET exists
-git merge --no-ff "$CURRENT"
-git push origin "$TARGET"
+git fetch origin "$TARGET"
+TREE=$(git merge-tree --write-tree "origin/$TARGET" HEAD) || { echo "$TREE"; exit 1; }   # conflict → stop
+C=$(git commit-tree "$TREE" -p "origin/$TARGET" -p HEAD -m "Merge branch '$CURRENT' into $TARGET")
+git push origin "${C}:refs/heads/$TARGET"   # braces: zsh reads $C:r as a modifier
+git fetch origin "$TARGET" && git merge-base --is-ancestor HEAD "origin/$TARGET"   # proves it landed
 ```
 
 A rule the file does not cover → ask the user; never guess.

@@ -23,7 +23,7 @@ python3 ~/.claude/scripts/dev/review-page.py --plan docs/plans/<slug>.md docs/re
 
    It merges findings at the same `file:line` into one (listing every lens), writes `docs/reviews/<slug>.findings.json`, and builds `docs/reviews/<slug>.html`.
    - `findings: 0` → tell the user "review clean: 4 lenses, 0 T0 issues", run `orca-card.py ready`, and stop.
-7. Open it: `python3 ~/.claude/scripts/dev/decision-page.py open docs/reviews/<slug>.html`. Also open the changed files as diff tabs: `orca file open-changed --mode diff --json`.
+7. Open it: `python3 ~/.claude/scripts/dev/decision-page.py open docs/reviews/<slug>.html`. Then open a diff tab for only the files the findings point at: `python3 ~/.claude/scripts/dev/open-finding-diffs.py docs/reviews/<slug>.findings.json`. Never `orca file open-changed`: it opens every changed file and buries the ones that matter.
 8. Run `orca-card.py waiting-review`. Tell the user, in two lines, the count by lens from step 6, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
 9. Get the answers: `python3 ~/.claude/scripts/dev/decision-page.py answers docs/reviews/<slug>.html`, or the pasted JSON when it exits with code 3. Then:
    - Spawn `dev-convention-learner` with `phase: review`, `plan`, and `feedback: <the answers>`. Skipped findings and comments are the strongest signal of what this project does not care about.

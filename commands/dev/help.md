@@ -13,7 +13,7 @@ Display this reference card when invoked. One-shot — do NOT change mode or per
 |---|---|
 | `/dev:development-guideline` | The methodology: propose → apply → archive, TDD, VDD, visual confirm |
 | `/dev:parallel-development` | Multiple proposals at once: worktree + sub-agent each, main session integrates |
-| `/dev:finishing-development` | Archive, commit & push current, merge into target branch |
+| `/dev:finishing-development` | Archive, then land each repo by its `.claude/finishing.md` (asks first when missing) |
 
 ## Autonomous cycle
 

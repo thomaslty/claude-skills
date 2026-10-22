@@ -1,7 +1,7 @@
 ---
 name: 1-design
-description: "Design phase: a fresh dev-designer agent explores the code and writes docs/plans/<slug>.md, then shows the choices only you can make as a decision-tree HTML page. You pick, copy the JSON, paste it back, and the plan is finalized. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the worktree's linked Jira ticket. Triggers on /dev:1-design, 'design this', 'plan this ticket'. Changes no source code."
-argument-hint: "[Jira URL/key | Notion URL | docs/tickets/<slug>.md | requirement text]"
+description: "Design phase: a fresh dev-designer agent explores the code and writes plan/<slug>/plan.md, then shows the choices only you can make as a decision-tree HTML page. You pick, copy the JSON, paste it back, and the plan is finalized. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the worktree's linked Jira ticket. Triggers on /dev:1-design, 'design this', 'plan this ticket'. Changes no source code."
+argument-hint: "[Jira URL/key | Notion URL | plan/<slug>/ticket.md | requirement text]"
 ---
 
 # 1 — Design
@@ -10,9 +10,9 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 
 ## Steps
 
-1. Find the ticket (below). The rest of this command works from `docs/tickets/<slug>.md`.
+1. Find the ticket (below). The rest of this command works from `plan/<slug>/ticket.md`.
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
-3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then spawn `dev-designer` with `ticket: docs/tickets/<slug>.md`.
+3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then spawn `dev-designer` with `ticket: plan/<slug>/ticket.md`.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
@@ -22,8 +22,20 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
      - Spawn a NEW `dev-designer` with `ticket` and `change: <their words>`. Never SendMessage the last one: it still holds the whole first design, like 324k tokens on Ticket 1, so every turn is slower and after a break its cache is gone.
      - Then reopen the page and back to step 4.
    - Both spawns pass `effort: medium`. Only the first design in step 3 runs at the default effort.
-6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `docs/plans/<slug>.md`.
+6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
 7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.
+
+## Where files go
+
+- `plan/<slug>/` is markdown only, and it is committed: `ticket.md` and `plan.md`
+- `dev/<slug>/` is everything else, and it is gitignored, one subfolder per kind:
+  - `attachments/` for the ticket's own files, like the CSVs on a Notion page
+  - `design/` for `decisions.json` and `decisions.html`
+  - `canvas/` for the Claude Design project
+  - `evidence/` for screenshots and API answers
+  - `review/` for `<lens>.json`, `findings.json`, `review.html`, and `round<n>/` for earlier rounds
+  - anything else gets its own subfolder, like `dev/<slug>/samples/`
+- if the repo's `.gitignore` has no `/dev/` line, add it before you write there
 
 ## Find the ticket
 
@@ -47,12 +59,13 @@ python3 ~/.claude/scripts/dev/ticket-source.py "$ARGUMENTS"
 - **Jira:** if `orca jira issue` fails, use the Atlassian MCP with the same `key`.
 - **Notion:** `page_id` is already the ticket, also when the link was a database view with `p=`. Then:
   - Turn `user://<id>` mentions into names with `notion-get-users`.
+  - Download the page's files into `dev/<slug>/attachments/` and list them under `## Related`.
   - Carry the page's tables and mermaid flows into the ticket as they are, and cut the prose to bullets.
   - Search Notion (`notion-search`) for the title and its key terms. Read the matching specs, designs and earlier tickets, and put what matters under `## Related`, with links.
 - **Pasted Notion text** comes back as `text`. Search Notion for its first line to find the page, then treat it as `notion`.
 - **MCP needs sign-in** (Notion or Atlassian shows `needs authentication`) → call its `authenticate` tool, give the user the link in one line, and wait.
 
-Write `docs/tickets/<slug>.md` unless it already exists:
+Write `plan/<slug>/ticket.md` unless it already exists:
 
 ```markdown
 # <issue title>
@@ -80,7 +93,7 @@ Jira: THLAU-1          (or)  Notion: <url from the parser>
 ## Open the page
 
 ```bash
-python3 ~/.claude/scripts/dev/decision-page.py open docs/plans/<slug>.decisions.html
+python3 ~/.claude/scripts/dev/decision-page.py open dev/<slug>/design/decisions.html
 ```
 
 It opens the page in Orca's browser next to this terminal, or in the default browser outside Orca, and saves the tab id next to the page.
@@ -88,7 +101,7 @@ It opens the page in Orca's browser next to this terminal, or in the default bro
 ## Get the answers
 
 - The user pasted JSON → use it.
-- The user typed `done` → `python3 ~/.claude/scripts/dev/decision-page.py answers docs/plans/<slug>.decisions.html`. It prints the picks and closes the tab.
+- The user typed `done` → `python3 ~/.claude/scripts/dev/decision-page.py answers dev/<slug>/design/decisions.html`. It prints the picks and closes the tab.
 - Exit code 3 (no Orca tab, or it was closed) → ask the user to press Copy and paste the JSON.
 
 ## Scripts
@@ -106,5 +119,5 @@ All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orc
 
 ## Cross-References
 
-- Next phase → `/dev:2-implement docs/plans/<slug>.md`
+- Next phase → `/dev:2-implement plan/<slug>/plan.md`
 - All phases → `/dev:full-dev-cycle`

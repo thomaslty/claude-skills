@@ -1,7 +1,7 @@
 ---
 name: full-dev-cycle
 description: "Run design → implement → review end to end for one ticket, each phase in a fresh agent, stopping after design and after review for you. Never starts the build until you say go. Moves the Orca card through the board as it goes. Triggers on /dev:full-dev-cycle, 'run the full cycle', 'do this ticket end to end'. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the Jira ticket Orca linked to this worktree."
-argument-hint: "[Jira URL/key | Notion URL | docs/tickets/<slug>.md | requirement text]"
+argument-hint: "[Jira URL/key | Notion URL | plan/<slug>/ticket.md | requirement text]"
 ---
 
 # Full Dev Cycle
@@ -49,7 +49,7 @@ Making a new worktree for another repo is allowed. Switching the branch of any e
 ## When design is done
 
 1. `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`. The card gets the unread dot.
-2. Tell the user in two lines: the plan path with the canvas link when the designer reported `CANVAS: <url>`, and the next step by name: "next: `/dev:2-implement docs/plans/<slug>.md` — say go to run it, or tell me what to change".
+2. Tell the user in two lines: the plan path with the canvas link when the designer reported `CANVAS: <url>`, and the next step by name: "next: `/dev:2-implement plan/<slug>/plan.md` — say go to run it, or tell me what to change".
 
 ## When done
 

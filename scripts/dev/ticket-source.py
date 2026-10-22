@@ -6,7 +6,7 @@ Usage:
   ticket-source.py --slugify "<title>"
 
 Prints one JSON object. `kind` is one of:
-  file    a docs/tickets/*.md path            -> path, slug
+  file    a plan/<slug>/ticket.md path        -> path, slug
   jira    a Jira URL or key, like THLAU-1     -> key, url, slug
   notion  a Notion link                       -> page_id, url (slug: --slugify the fetched title)
   text    plain requirement text              -> text, slug
@@ -91,18 +91,20 @@ def resolve(arg, root):
     arg = arg.strip()
 
     if not arg:
-        tickets = sorted((root / "docs" / "tickets").glob("*.md"))
+        tickets = sorted(root.glob("plan/*/ticket.md"))
         if len(tickets) == 1:
-            return {"kind": "file", "path": str(tickets[0].relative_to(root)), "slug": tickets[0].stem, "via": "tickets-dir"}
+            return {"kind": "file", "path": str(tickets[0].relative_to(root)), "slug": tickets[0].parent.name, "via": "tickets-dir"}
         linked = orca_link(root)
         if linked:
             return {**linked, "via": "orca-link"}
-        reason = f"{len(tickets)} files in docs/tickets" if tickets else "no argument, no docs/tickets, no Orca link"
+        reason = f"{len(tickets)} tickets in plan/" if tickets else "no argument, no plan/*/ticket.md, no Orca link"
         return {"kind": "ask", "reason": reason}
 
     path = root / arg
     if arg.endswith(".md") and path.is_file():
-        return {"kind": "file", "path": arg, "slug": path.stem, "via": "argument"}
+        # plan/<slug>/ticket.md names its slug by its folder
+        slug = path.parent.name if path.name == "ticket.md" else path.stem
+        return {"kind": "file", "path": arg, "slug": slug, "via": "argument"}
 
     if JIRA_KEY.match(arg):
         return {"kind": "jira", "key": arg, "url": None, "slug": arg, "via": "argument"}

@@ -11,7 +11,7 @@ You start with a fresh context and review through ONE lens, named in the brief.
 ## Inputs (from the brief)
 
 - `lens` — one of `correctness`, `security`, `feature`, `completeness`.
-- `plan` — `docs/plans/<slug>.md`. Its ticket is linked at the top.
+- `plan` — `plan/<slug>/plan.md`. Its ticket is linked at the top.
 - `base` — the base ref to diff against.
 
 ## Hard rules

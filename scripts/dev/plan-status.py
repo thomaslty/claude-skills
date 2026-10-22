@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Read a docs/plans/<slug>.md and report where it stands, instead of counting by eye.
+"""Read a plan/<slug>/plan.md and report where it stands, instead of counting by eye.
 
-Usage: plan-status.py <docs/plans/<slug>.md>
+Usage: plan-status.py <plan/<slug>/plan.md>
 
 Prints: {"status": "approved", "ticked": 27, "total": 30, "left": ["4", "19", "review:sec-1"], "done": false}
 `done` is true only when the plan is approved and every step under ## Steps is ticked.

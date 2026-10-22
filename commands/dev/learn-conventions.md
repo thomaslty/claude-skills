@@ -9,7 +9,7 @@ argument-hint: "[what you want remembered]"
 Spawn `dev-convention-learner` with:
 
 - `phase: manual`
-- `plan`: the plan in `docs/plans/` this work belongs to, if there is one
+- `plan`: the plan in `plan/` this work belongs to, if there is one
 - `feedback`: `$ARGUMENTS`, plus every correction the user typed in this session, verbatim
 
 Show its one-line report.

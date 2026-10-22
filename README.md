@@ -54,7 +54,7 @@ The `dev:1-design` … `dev:full-dev-cycle` commands need the `agents/` (one fre
 | `/dev:parallel-development` | Build multiple proposals at once via per-worktree parallel sub-agents |
 | `/dev:finishing-development` | Archive, then land each repo by its own `.claude/finishing-development.md`; asks for the rules first when a repo has none |
 | `/dev:ticket` | Orca board ticket — `new` makes a card + worktree, `start` launches Claude on it |
-| `/dev:1-design` | Fresh agent writes `docs/plans/<slug>.md`, asks you via a decision-tree HTML page |
+| `/dev:1-design` | Fresh agent writes `plan/<slug>/plan.md`, asks you via a decision-tree HTML page |
 | `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
 | `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, HTML page |
 | `/dev:full-dev-cycle` | Design ⏸ → implement → review ⏸ → fix, each phase a fresh agent, stops for you after design and review |

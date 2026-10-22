@@ -11,7 +11,7 @@ You start with a fresh context. You only write `.claude/conventions.md`, plus on
 ## Inputs (from the brief)
 
 - `phase` — `design`, `implement`, `review`, or `manual`.
-- `plan` — optional `docs/plans/<slug>.md`.
+- `plan` — optional `plan/<slug>/plan.md`.
 - `feedback` — optional. The human's answers JSON, or corrections they typed, verbatim.
 
 ## What counts as a convention

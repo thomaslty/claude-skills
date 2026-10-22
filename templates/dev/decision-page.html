@@ -68,6 +68,8 @@ pre.graph .on { color: var(--accent); font-weight: 700; }
 .tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
 .tag.T0 { background: var(--t0-soft); color: var(--t0); }
 .where { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+a.where { color: var(--accent); text-decoration: none; }
+a.where:hover { text-decoration: underline; }
 .context { color: var(--ink); margin: 0 0 12px; }
 .opt { display: block; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 8px; cursor: pointer; }
 .opt:hover { border-color: var(--accent); }
@@ -184,6 +186,17 @@ function renderBlocks(blocks, into) {
   }
 }
 
+// "path/to/file.jsx:31" -> a link to the file; an absolute path opens it, the text keeps the line.
+function whereLink(where) {
+  const path = where.replace(/:\d+(-\d+)?$/, "");
+  if (!path.startsWith("/")) return el("span", "where", where);
+  const a = el("a", "where", where);
+  a.href = "file://" + path.split("/").map(encodeURIComponent).join("/");
+  a.target = "_blank";
+  a.title = "Open " + path;
+  return a;
+}
+
 // `code` and **bold** inside a step bullet, built as nodes so nothing is parsed as HTML.
 function inline(text) {
   const span = el("span");
@@ -289,7 +302,7 @@ function renderNode(id, via) {
   const h = el("h2");
   h.appendChild(el("span", null, n.title));
   if (n.severity) h.appendChild(el("span", "tag " + n.severity, n.severity));
-  if (n.where) h.appendChild(el("span", "where", n.where));
+  if (n.where) h.appendChild(whereLink(n.where));
   box.appendChild(h);
   if (n.context) { const c = el("div", "context blocks"); renderBlocks(n.context, c); box.appendChild(c); }
 

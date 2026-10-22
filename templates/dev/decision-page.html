@@ -54,6 +54,15 @@ dl.facts dd { margin: 0; }
 .tbl th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
 .canvas { margin: -8px 0 16px; font-size: 14px; }
 .canvas a { color: var(--accent); word-break: break-all; }
+.diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-error { color: var(--t0); font-size: 12px; text-align: left; margin-bottom: 6px; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links a { font-size: 12.5px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--accent); text-decoration: none; }
+.links a:hover { border-color: var(--accent); }
+details.fold { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+details.fold summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+details.fold[open] summary { margin-bottom: 8px; }
 .tbl code, .blocks code { font: 12.5px ui-monospace, Menlo, monospace; }
 .node { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 0 0 12px; }
 .branch { margin-left: 22px; padding-left: 16px; border-left: 2px solid var(--accent); }
@@ -98,7 +107,7 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
   <div class="meta" id="meta"></div>
   <p class="canvas" id="canvas"></p>
   <div class="summary" id="summary"><h2>Overview</h2><div class="blocks" id="summary-blocks"></div></div>
-  <div class="summary map"><h2>Decision map</h2><pre class="graph" id="map"></pre></div>
+  <div class="summary map"><h2 id="map-title">Decision map</h2><pre class="graph" id="map"></pre></div>
   <div id="tree"></div>
   <div class="general node">
     <h2>Anything else?</h2>
@@ -112,6 +121,7 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
   <textarea id="out" readonly></textarea>
 </div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js"></script>
 <script id="page-data" type="application/json">__PAGE_DATA__</script>
 <script>
 // Light/dark switch. No choice saved = follow the system setting.
@@ -131,8 +141,9 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
     root.dataset.theme = current() === "dark" ? "light" : "dark";
     try { localStorage.setItem("decision-page-theme", root.dataset.theme); } catch {}
     label();
+    drawDiagrams(true);
   });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", label);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { label(); drawDiagrams(true); });
   label();
 })();
 const DATA = JSON.parse(document.getElementById("page-data").textContent);
@@ -146,6 +157,7 @@ for (const [id, n] of Object.entries(DATA.nodes)) {
 
 document.title = DATA.title || "Decision Page";
 document.getElementById("title").textContent = DATA.title || "";
+if (DATA.mapTitle) document.getElementById("map-title").textContent = DATA.mapTitle;
 document.getElementById("meta").textContent = [DATA.kind, DATA.ticket, DATA.plan].filter(Boolean).join("  ·  ");
 // Mockups live on the Claude Design canvas; the page only carries its link.
 const canvasLine = document.getElementById("canvas");
@@ -165,7 +177,7 @@ function el(tag, cls, text) {
   return e;
 }
 
-// Structured content only: text (one line), bullets, table, graph (ASCII).
+// Structured content only: text (one line), bullets, table, graph (ASCII), mermaid, links, fold.
 function renderBlocks(blocks, into) {
   for (const b of [].concat(blocks)) {
     if (b.type === "text") into.appendChild(el("p", null, b.text));
@@ -188,6 +200,45 @@ function renderBlocks(blocks, into) {
       const dl = el("dl", "facts");
       b.items.forEach(([label, text]) => { dl.appendChild(el("dt", null, label)); const dd = el("dd"); dd.appendChild(inline(text)); dl.appendChild(dd); });
       into.appendChild(dl);
+    } else if (b.type === "mermaid") {
+      const d = el("div", "diagram");
+      d.dataset.code = b.code;
+      into.appendChild(d);
+    } else if (b.type === "links") {
+      const w = el("div", "links");
+      b.items.forEach(([label, url]) => { const a = el("a", null, label + " \u2197"); a.href = url; a.target = "_blank"; a.rel = "noopener"; w.appendChild(a); });
+      into.appendChild(w);
+    } else if (b.type === "fold") {
+      const d = el("details", "fold"), inner = el("div", "blocks");
+      d.appendChild(el("summary", null, b.title));
+      renderBlocks(b.blocks, inner);
+      d.appendChild(inner);
+      into.appendChild(d);
+    }
+  }
+}
+
+// Mermaid source drawn as SVG after each render, and again when the theme flips.
+// Offline (the CDN script did not load) it falls back to showing the source.
+let diagramSeq = 0;
+async function drawDiagrams(redraw) {
+  const boxes = document.querySelectorAll(redraw ? ".diagram" : ".diagram:not([data-drawn])");
+  if (!boxes.length) return;
+  if (!window.mermaid) {
+    boxes.forEach(d => { d.dataset.drawn = "1"; d.innerHTML = ""; d.appendChild(el("pre", "graph", d.dataset.code)); });
+    return;
+  }
+  const theme = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: theme === "dark" ? "dark" : "default" });
+  for (const d of boxes) {
+    d.dataset.drawn = "1";
+    try {
+      const { svg } = await mermaid.render("diagram-" + (++diagramSeq), d.dataset.code);
+      d.innerHTML = svg;
+    } catch (e) {
+      d.innerHTML = "";
+      d.appendChild(el("div", "diagram-error", "diagram failed: " + (e.message || e)));
+      d.appendChild(el("pre", "graph", d.dataset.code));
     }
   }
 }
@@ -318,6 +369,7 @@ function render() {
     parent.appendChild(renderNode(v.id, v.via));
   }
   update();
+  drawDiagrams();
 }
 
 function response() {

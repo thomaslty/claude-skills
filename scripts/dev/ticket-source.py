@@ -6,7 +6,7 @@ Usage:
   ticket-source.py --slugify "<title>"
 
 Prints one JSON object. `kind` is one of:
-  file    a plan/<slug>/ticket.md path        -> path, slug
+  file    a plan/<slug>/ticket.md or idea.md  -> path, slug
   jira    a Jira URL or key, like THLAU-1     -> key, url, slug
   notion  a Notion link                       -> page_id, url (slug: --slugify the fetched title)
   text    plain requirement text              -> text, slug
@@ -102,8 +102,8 @@ def resolve(arg, root):
 
     path = root / arg
     if arg.endswith(".md") and path.is_file():
-        # plan/<slug>/ticket.md names its slug by its folder
-        slug = path.parent.name if path.name == "ticket.md" else path.stem
+        # plan/<slug>/ticket.md and idea.md name their slug by their folder
+        slug = path.parent.name if path.name in ("ticket.md", "idea.md") else path.stem
         return {"kind": "file", "path": arg, "slug": slug, "via": "argument"}
 
     if JIRA_KEY.match(arg):

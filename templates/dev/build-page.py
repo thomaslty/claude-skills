@@ -5,6 +5,7 @@ Usage: python3 ~/.claude/templates/dev/build-page.py <data.json> <out.html>
 """
 import json
 import pathlib
+import re
 import sys
 
 data_path, out_path = sys.argv[1], sys.argv[2]
@@ -22,7 +23,11 @@ for nid, node in data["nodes"].items():
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
 LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70,
-          "step_bullet": 140, "step_label": 14, "fact": 400}
+          "step_bullet": 140, "step_label": 14, "fact": 400, "diagram_lines": 60}
+# Mermaid diagram types the page draws, and the label text inside ["..."], [..], (..), {..} and |..|.
+DIAGRAMS = ("flowchart", "graph", "mindmap", "timeline", "quadrantChart", "sequenceDiagram",
+            "stateDiagram-v2", "journey", "pie", "xychart-beta", "block-beta")
+LABEL = re.compile(r'"([^"]*)"|\[([^\[\]"]*)\]|\(([^()"]*)\)|\{([^{}"]*)\}|\|([^|"]*)\|')
 # Mockups live on a Claude Design canvas; the page only links it.
 CANVAS_MOVED = "screens live on the Claude Design canvas now; set the top-level \"canvas\" url instead"
 errors = []
@@ -64,8 +69,35 @@ def check_blocks(where, blocks):
             for label, text in b["items"]:
                 if len(label) > LIMITS["step_label"] or len(text) > LIMITS["fact"]:
                     errors.append(f"{at}: fact {label!r} is over {LIMITS['step_label']}/{LIMITS['fact']} chars")
+        elif kind == "mermaid":
+            check_mermaid(at, b.get("code", ""))
+        elif kind == "links":
+            for label, url in b["items"]:
+                if len(label) > LIMITS["label"] or not url.startswith(("http://", "https://")):
+                    errors.append(f"{at}: link {label!r} needs a label of at most {LIMITS['label']} chars and an http(s) url")
+        elif kind == "fold":
+            if len(b.get("title", "")) > LIMITS["label"]:
+                errors.append(f"{at}: fold title is over {LIMITS['label']} chars")
+            check_blocks(f"{at}.fold", b.get("blocks", []))
         elif kind != "graph":
-            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, heading or steps")
+            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, mermaid, links, fold, heading, facts or steps")
+
+
+def check_mermaid(at, code):
+    """A diagram, not prose in a box: a known type, every label short, the whole thing small."""
+    lines = [l for l in code.strip().splitlines() if l.strip() and not l.strip().startswith("%%")]
+    kind = lines[0].split()[0] if lines else ""
+    if kind not in DIAGRAMS:
+        errors.append(f"{at}: mermaid must start with one of {', '.join(DIAGRAMS)}, not {kind!r}")
+        return
+    if len(lines) > LIMITS["diagram_lines"]:
+        errors.append(f"{at}: diagram has {len(lines)} lines, max {LIMITS['diagram_lines']}; split it")
+    for line in lines[1:]:
+        # mindmap and timeline nodes are bare text, one per line
+        texts = [line.strip()] if kind in ("mindmap", "timeline") else [t for g in LABEL.findall(line) for t in g if t]
+        for text in texts:
+            if len(text) > LIMITS["label"]:
+                errors.append(f"{at}: diagram label is {len(text)} chars, max {LIMITS['label']}: {text[:40]!r}")
 
 
 def check_steps(at, items):

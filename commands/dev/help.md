@@ -23,6 +23,7 @@ Each phase runs in a fresh agent. You only step in on the HTML decision pages.
 |---|---|
 | `/dev:ticket new <slug>` | Orca card in Todo + worktree + `plan/<slug>/ticket.md` |
 | `/dev:ticket start <slug>` | Card to In Progress, Claude runs the full cycle there |
+| `/dev:0-explore` | Grill a rough idea into a ticket: research, canvas, page per round |
 | `/dev:1-design` | Plan in `plan/<slug>/plan.md`, decision-tree page for your picks |
 | `/dev:2-implement` | Follow the plan until every step is verified |
 | `/dev:3-review` | 4 lenses, T0 only, fix / skip page |

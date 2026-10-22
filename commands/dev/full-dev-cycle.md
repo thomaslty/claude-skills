@@ -49,7 +49,7 @@ Making a new worktree for another repo is allowed. Switching the branch of any e
 ## When design is done
 
 1. `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`. The card gets the unread dot.
-2. Tell the user in two lines: the plan path, and the next step by name: "next: `/dev:2-implement docs/plans/<slug>.md` — say go to run it, or tell me what to change".
+2. Tell the user in two lines: the plan path with the canvas link when the designer reported `CANVAS: <url>`, and the next step by name: "next: `/dev:2-implement docs/plans/<slug>.md` — say go to run it, or tell me what to change".
 
 ## When done
 

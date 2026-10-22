@@ -16,11 +16,12 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 4. Read its report.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
+   - `CANVAS: <url>` → the mockups are on that Claude Design canvas, and the page already links it. Give the user the link as one more line. The designer creates and updates the canvas itself; never publish to it from here.
 5. Get the answers (below), then spawn a NEW `dev-designer` with `ticket` and `answers: <the JSON verbatim>`. Back to step 4.
-   - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches and rebuilds the page. Never start a full redesign for a change.
-     - The last `dev-designer` of this design is still reachable → SendMessage it `change: <their words>`. It already holds the plan and the code it read, so it skips the re-reading.
-     - Otherwise spawn a NEW `dev-designer` with `ticket` and `change: <their words>`.
+   - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches, sends only the changed artboards to the same canvas, and rebuilds the page. Never start a full redesign for a change.
+     - Spawn a NEW `dev-designer` with `ticket` and `change: <their words>`. Never SendMessage the last one: it still holds the whole first design, like 324k tokens on Ticket 1, so every turn is slower and after a break its cache is gone.
      - Then reopen the page and back to step 4.
+   - Both spawns pass `effort: medium`. Only the first design in step 3 runs at the default effort.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `docs/plans/<slug>.md`.
 7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.
 
@@ -99,7 +100,7 @@ Do not do these by hand; each script is the only way this command does it.
 | `ticket-source.py` | parse the ticket argument |
 | `orca-card.py <phase>` | move the Orca card |
 | `decision-page.py` | open page, read picks |
-| `screen-css.py` | real CSS for screens |
+| `screen-css.py` | real CSS for the canvas |
 
 All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orca, and `--dry-run` prints what it would run.
 

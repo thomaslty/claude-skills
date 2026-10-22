@@ -52,17 +52,8 @@ dl.facts dd { margin: 0; }
 .tbl table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 .tbl th, .tbl td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .tbl th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
-.screen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
-.screen-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
-.screen-bar button { padding: 3px 10px; font-size: 12px; background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-.screen .vp { position: relative; overflow: hidden; }
-.screen iframe { display: block; border: 0; background: #fff; transform-origin: 0 0; position: absolute; top: 0; left: 0; }
-.opt-screen { margin: 4px 0 10px; }
-.opt-screen .via { margin-bottom: 4px; }
-#modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10; padding: 24px; }
-#modal.show { display: flex; flex-direction: column; }
-#modal .screen { flex: 1; display: flex; flex-direction: column; }
-#modal .vp { flex: 1; }
+.canvas { margin: -8px 0 16px; font-size: 14px; }
+.canvas a { color: var(--accent); word-break: break-all; }
 .tbl code, .blocks code { font: 12.5px ui-monospace, Menlo, monospace; }
 .node { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 0 0 12px; }
 .branch { margin-left: 22px; padding-left: 16px; border-left: 2px solid var(--accent); }
@@ -105,6 +96,7 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
 <main>
   <h1 id="title"></h1>
   <div class="meta" id="meta"></div>
+  <p class="canvas" id="canvas"></p>
   <div class="summary" id="summary"><h2>Overview</h2><div class="blocks" id="summary-blocks"></div></div>
   <div class="summary map"><h2>Decision map</h2><pre class="graph" id="map"></pre></div>
   <div id="tree"></div>
@@ -120,7 +112,6 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
   <textarea id="out" readonly></textarea>
 </div></div>
 
-<div id="modal"></div>
 <script id="page-data" type="application/json">__PAGE_DATA__</script>
 <script>
 // Light/dark switch. No choice saved = follow the system setting.
@@ -156,6 +147,14 @@ for (const [id, n] of Object.entries(DATA.nodes)) {
 document.title = DATA.title || "Decision Page";
 document.getElementById("title").textContent = DATA.title || "";
 document.getElementById("meta").textContent = [DATA.kind, DATA.ticket, DATA.plan].filter(Boolean).join("  ·  ");
+// Mockups live on the Claude Design canvas; the page only carries its link.
+const canvasLine = document.getElementById("canvas");
+if (DATA.canvas) {
+  canvasLine.appendChild(document.createTextNode("Mockups on Claude Design: "));
+  const a = el("a", null, DATA.canvas);
+  a.href = DATA.canvas; a.target = "_blank"; a.rel = "noopener";
+  canvasLine.appendChild(a);
+} else canvasLine.remove();
 if (DATA.summary) renderBlocks(DATA.summary, document.getElementById("summary-blocks"));
 else document.getElementById("summary").remove();
 
@@ -190,7 +189,6 @@ function renderBlocks(blocks, into) {
       b.items.forEach(([label, text]) => { dl.appendChild(el("dt", null, label)); const dd = el("dd"); dd.appendChild(inline(text)); dl.appendChild(dd); });
       into.appendChild(dl);
     }
-    else if (b.type === "screen") into.appendChild(renderScreen(b));
   }
 }
 
@@ -231,38 +229,6 @@ function renderStep(s) {
     ul.appendChild(li);
   });
   box.appendChild(ul);
-  return box;
-}
-
-// UI draft: a static HTML mock inlined by build-page.py, sandboxed so it cannot touch this page.
-function renderScreen(b, big) {
-  const box = el("div", "screen"), bar = el("div", "screen-bar");
-  bar.appendChild(el("span", null, "screen · " + (b.caption || "")));
-  const btn = el("button", null, big ? "Close" : "Full size");
-  btn.addEventListener("click", () => {
-    const m = document.getElementById("modal");
-    if (big) { m.classList.remove("show"); m.innerHTML = ""; }
-    else { m.innerHTML = ""; m.appendChild(renderScreen(b, true)); m.classList.add("show"); }
-  });
-  bar.appendChild(btn);
-  // Render at the app's real viewport, then scale to fit, so the layout is the one the app draws.
-  const W = b.width || 1440, H = b.height || 900;
-  const vp = el("div", "vp"), f = el("iframe");
-  f.setAttribute("sandbox", "");
-  f.srcdoc = b.html;
-  f.style.width = W + "px";
-  f.style.height = H + "px";
-  vp.appendChild(f);
-  const fit = () => {
-    const room = vp.clientWidth || W;
-    const k = Math.min(1, room / W, big ? (vp.parentElement.clientHeight - 40) / H : 1);
-    f.style.transform = "scale(" + k + ")";
-    if (!big) vp.style.height = Math.round(H * k) + "px";
-  };
-  new ResizeObserver(fit).observe(vp);
-  box.appendChild(bar);
-  box.appendChild(vp);
-  requestAnimationFrame(fit);
   return box;
 }
 
@@ -324,13 +290,6 @@ function renderNode(id, via) {
     if (o.recommended) lab.appendChild(el("span", "rec", "recommended"));
     if (o.result) lab.appendChild(el("span", "result", o.result));
     box.appendChild(lab);
-  }
-  const picked = (n.options || []).find(o => o.id === s.choice);
-  if (picked && picked.screen) {
-    const w = el("div", "opt-screen");
-    w.appendChild(el("div", "via", "screen for: " + picked.label));
-    w.appendChild(renderScreen(picked.screen));
-    box.appendChild(w);
   }
   if (s.choice === OTHER) {
     const t = el("input", "other-text"); t.type = "text"; t.placeholder = "Your answer"; t.value = s.other;

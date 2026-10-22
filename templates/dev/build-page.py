@@ -21,10 +21,13 @@ for nid, node in data["nodes"].items():
 
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
-LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70, "screen_kb": 1024,
+LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70,
           "step_bullet": 140, "step_label": 14, "fact": 400}
-base = pathlib.Path(data_path).resolve().parent
+# Mockups live on a Claude Design canvas; the page only links it.
+CANVAS_MOVED = "screens live on the Claude Design canvas now; set the top-level \"canvas\" url instead"
 errors = []
+if "canvas" in data and not str(data["canvas"]).startswith("https://claude.ai/"):
+    errors.append(f"canvas must be the canvas url, like https://claude.ai/artifact/<id>, not {data['canvas']!r}")
 
 
 def check_blocks(where, blocks):
@@ -51,7 +54,7 @@ def check_blocks(where, blocks):
                     if len(cell) > LIMITS["cell"]:
                         errors.append(f"{at}: cell is {len(cell)} chars, max {LIMITS['cell']}: {cell[:40]!r}")
         elif kind == "screen":
-            inline_screen(at, b)
+            errors.append(f"{at}: {CANVAS_MOVED}")
         elif kind == "heading":
             if len(b["text"]) > LIMITS["label"]:
                 errors.append(f"{at}: heading is over {LIMITS['label']} chars")
@@ -62,7 +65,7 @@ def check_blocks(where, blocks):
                 if len(label) > LIMITS["step_label"] or len(text) > LIMITS["fact"]:
                     errors.append(f"{at}: fact {label!r} is over {LIMITS['step_label']}/{LIMITS['fact']} chars")
         elif kind != "graph":
-            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, heading, steps or screen")
+            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, heading or steps")
 
 
 def check_steps(at, items):
@@ -84,20 +87,6 @@ def check_steps(at, items):
                 errors.append(f"{name}: bullet is {len(text)} chars, max {LIMITS['step_bullet']}: {text[:40]!r}")
 
 
-def inline_screen(at, screen):
-    """A screen points at a mock .html next to the JSON; its markup goes into the page."""
-    src = base / screen.get("src", "")
-    if not src.is_file():
-        errors.append(f"{at}: screen file not found: {src}")
-        return
-    if src.stat().st_size > LIMITS["screen_kb"] * 1024:
-        errors.append(f"{at}: screen {src.name} is over {LIMITS['screen_kb']} KB; inline no images, and compile CSS with screen-css.py so only used classes are kept")
-        return
-    if len(screen.get("caption", "")) > LIMITS["label"]:
-        errors.append(f"{at}: screen caption is over {LIMITS['label']} chars")
-    screen["html"] = src.read_text()
-
-
 if "summary" in data:
     check_blocks("summary", data["summary"])
 for nid, node in data["nodes"].items():
@@ -105,7 +94,7 @@ for nid, node in data["nodes"].items():
         check_blocks(f"{nid}.context", node["context"])
     for opt in node.get("options", []):
         if "screen" in opt:
-            inline_screen(f"{nid}.{opt['id']}.screen", opt["screen"])
+            errors.append(f"{nid}.{opt['id']}.screen: {CANVAS_MOVED}; name the option's artboard in its result")
         for key in ("label", "result"):
             if len(opt.get(key, "")) > LIMITS[key]:
                 errors.append(f"{nid}.{opt['id']}.{key} is {len(opt[key])} chars, max {LIMITS[key]}")

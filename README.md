@@ -83,7 +83,7 @@ The `dev:1-design` … `dev:full-dev-cycle` commands need the `agents/` (one fre
 claude-skills/
 ├── agents/                # Phase agents for dev: (designer, implementer, reviewer, convention-learner)
 ├── templates/dev/         # Decision page HTML + build-page.py
-├── scripts/dev/           # ticket-source, orca-card, plan-status, decision-page, review-page, screen-css, chrome-devtools-unlock
+├── scripts/dev/           # ticket-source, orca-card, plan-status, decision-page, review-page, screen-css, chrome-devtools-unlock, localdb (+ localdb.compose.yml)
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/

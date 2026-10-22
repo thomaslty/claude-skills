@@ -1,0 +1,28 @@
+# The local SQL Server `localdb.py` drives. macOS: `localdb.py up` starts colima
+# for you.
+#
+# Azure SQL Edge, not mcr.microsoft.com/mssql/server, the same pick as
+# OM.Robot's docker-compose.local.yml and Omega's local_db: the latter ships no
+# arm64 image, and its amd64 one will not boot under QEMU on Apple Silicon.
+#
+# Port 1436 on 127.0.0.1 only, so it never fights the 1434 and 1435 those two
+# projects use, or a 1433 you already have. The named volume keeps every
+# database across a restart; `localdb.py drop <db>` is the delete button.
+
+name: localdb
+
+services:
+  mssql:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local only, and written here on purpose — this server holds nothing but
+      # copies. The same password the two projects' local servers use.
+      MSSQL_SA_PASSWORD: "${LOCALDB_PASSWORD:-LocalRobot#2026}"
+    ports:
+      - "127.0.0.1:${LOCALDB_PORT:-1436}:1433"
+    volumes:
+      - mssql:/var/opt/mssql
+
+volumes:
+  mssql:

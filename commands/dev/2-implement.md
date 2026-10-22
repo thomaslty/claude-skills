@@ -21,8 +21,18 @@ You are the coordinator. The build runs in a fresh `dev-implementer` agent.
    - `done: true` → step 5.
    - `done: false` and the agent did not report a blocker → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report `left`.
    - `STATUS: blocked` → tell the user the blocker in one sentence, run `orca-card.py blocked`, and stop.
+   - `STATUS: needs-db` → there is no local database for `DB`. Ask the user with AskUserQuestion what to do, never pick for them:
+     - clone it from dev (Recommended): `localdb.py clone` reads dev once, then everything runs on the copy
+     - load a `.sql`, `.bacpac` or `.dacpac` file they give
+     - start empty, from the project's own migrations
+
+     Then spawn a NEW `dev-implementer` with `plan` and `db: <their answer>`, like `db: clone .env.dev1 --prefix OMEGA`.
 5. Spawn `dev-convention-learner` with `phase: implement` and `plan`.
 6. Tell the user what now works, with the evidence path from `VERIFIED`, and the next step: `/dev:3-review plan/<slug>/plan.md`.
+
+## Local database
+
+The build runs on a local database only, never a real env, dev included. The agent's rules are in `~/.claude/agents/dev-implementer.md` under "Local database, never a real env". The toolkit is `uv run ~/.claude/scripts/dev/localdb.py`, run it with no command for its help.
 
 ## Cross-References
 

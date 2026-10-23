@@ -64,7 +64,7 @@ Speed matters here; a change should take about a minute, not a redesign's five.
 1. Read `plan/<slug>/plan.md`, `dev/<slug>/design/decisions.json` and the change.
 2. Start from what the plan already cites: its Reuse and Files tables give the `file:line` to open. Open new code only where the change reaches beyond them. Cite `file:line` for it.
    - No web research in update mode; `## Research` stays as it is.
-3. Edit only what the change touches: the steps, Files rows, Decisions rows and Verification rows it affects, and in the page JSON only the `summary` blocks and step cards that mention them. Redraw an artboard only if the change alters it.
+3. Edit only what the change touches: the steps with their matrix rows and detail blocks, Files rows, Decisions rows and Verification rows it affects, and in the page JSON only the `summary` blocks and step cards that mention them. Redraw an artboard only if the change alters it.
 4. Leave everything else exactly as it is. Do not reword, renumber or reorder untouched steps, rows or blocks, and do not redo the research.
    - Re-run `screen-css.py` only when a redrawn artboard uses a class none had before; otherwise keep `project/project.css`. Render an artboard in a headless browser only when you redrew it.
    - Send only the redrawn artboards (and `project.css` if you recompiled it) to the plan's `Canvas:` url. Never make a new canvas for a change.
@@ -74,7 +74,7 @@ Speed matters here; a change should take about a minute, not a redesign's five.
 ## Finalize mode (`answers` given)
 
 1. Read `plan/<slug>/plan.md` and the answers.
-2. Fold each answer into the Decisions table, and change the steps it affects. An answer that changes a screen: redraw that artboard and send it as in update mode. If the human picked "Other" or left a comment, follow what they wrote.
+2. Fold each answer into the Decisions table, and change the steps it affects, with their matrix rows and detail blocks. An answer that changes a screen: redraw that artboard and send it as in update mode. If the human picked "Other" or left a comment, follow what they wrote.
 3. If an answer opens a new question only the human can answer, build a new decision page with just that question. Otherwise set `Status: approved`.
 
 ## Plan format
@@ -88,6 +88,9 @@ Canvas: https://claude.ai/artifact/<id>   (only when the ticket has UI)
 
 ## Goal
 One sentence: what is true when this is done.
+
+## System
+The `/show-plan` picture of what the plan touches, in a plain fenced code block, the same graph as the page's `System`.
 
 ## Research
 | Approach | Used by / source | Fits here? |
@@ -109,9 +112,21 @@ New libraries: none (or each one, with the reason the installed ones cannot do i
 | File | Change |
 |---|---|
 
+## Matrix
+| # | Step | Touches | Depends on | Effort |
+|---|---|---|---|---|
+| 1 | <Swap zone 1 secret names> | <azure-pipeline-ev-entity.yml> | — | <15 min> |
+
 ## Steps
 - [ ] 1. <one bounded action> — verify: `<command or check>`
 - [ ] 2. ...
+
+## Detail
+**1. <Swap zone 1 secret names>** · <15 min> · after —
+- Now: <what the code does today, with file:line>
+- Fix: <what it should do instead>
+- Real damage: <a real number or string>
+- Skip it: <what stays broken>
 
 ## Verification
 How the finished work is seen working in the real app: the page to open or endpoint to call, and what it should show.
@@ -125,6 +140,8 @@ What this plan deliberately does not do.
 ```
 
 Each step is one action a fresh agent can do with only this file: name the real file and say what changes. Order the steps so the failing test comes before the code it covers.
+
+`## System`, `## Matrix` and `## Detail` are the `/show-plan` view written down, by Steps 4 to 6 of `~/.claude/commands/show-plan.md`, so the implementer codes from the same picture you showed the human. `## Matrix` has no Status column; the tick in `## Steps` is the status. Keep the three in step with `## Steps`: one matrix row and one detail block per step.
 
 ## Mockups
 
@@ -220,7 +237,7 @@ The human answers on an HTML page instead of in the terminal. Each question is a
 | `steps` | `/show-plan` detail, one card per step | ≤ 5 bullets, each ≤ 140 |
 
    - `build-page.py` rejects anything over these limits and says why. Rewrite the content as a table or bullets; never split a paragraph to get under the limit.
-   - `summary` IS the `/show-plan` view of the plan. Read `~/.claude/commands/show-plan.md` and follow its Steps 3-6 and its Never list exactly, in this order, each under a `heading`:
+   - `summary` IS the `/show-plan` view of the plan, the same content as the plan's `## System`, `## Matrix` and `## Detail`. Read `~/.claude/commands/show-plan.md` and follow its Steps 3-6 and its Never list exactly, in this order, each under a `heading`:
      1. `Goal` — one `text`: what is true when the plan is done; then one `text`: "0 of N steps done".
      2. `System` — one `graph` per picture the plan needs (system, screen, or before/after; at most 3). Draw the system, not the schedule: real file, table and route names, labelled edges, counts outside the boxes, no durations, no step numbers, under 80 columns. Then one `text` with a real number.
      3. `Steps` — a `table` with head `#`, `Step`, `Touches`, `Depends on`, `Effort`, `Status`. Every step, one row each, cells ≤ 30 chars, no lists inside a cell.

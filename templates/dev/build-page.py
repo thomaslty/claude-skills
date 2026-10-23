@@ -23,7 +23,8 @@ for nid, node in data["nodes"].items():
 # Structured content only: no paragraphs. Each limit fails the build with a reason,
 # so the agent rewrites the content instead of shipping prose.
 LIMITS = {"text": 120, "bullet": 100, "bullets": 5, "cell": 40, "label": 40, "result": 70,
-          "step_bullet": 140, "step_label": 14, "fact": 400, "diagram_lines": 60}
+          "step_bullet": 140, "step_label": 14, "fact": 400, "diagram_lines": 60,
+          "sentence": 200, "point_label": 20, "flow_title": 60, "groups": 4, "size": 10}
 # Mermaid diagram types the page draws, and the label text inside ["..."], [..], (..), {..} and |..|.
 DIAGRAMS = ("flowchart", "graph", "mindmap", "timeline", "quadrantChart", "sequenceDiagram",
             "stateDiagram-v2", "journey", "pie", "xychart-beta", "block-beta")
@@ -79,8 +80,47 @@ def check_blocks(where, blocks):
             if len(b.get("title", "")) > LIMITS["label"]:
                 errors.append(f"{at}: fold title is over {LIMITS['label']} chars")
             check_blocks(f"{at}.fold", b.get("blocks", []))
+        elif kind == "points":
+            if not b.get("items") or len(b["items"]) > LIMITS["bullets"]:
+                errors.append(f"{at}: {len(b.get('items', []))} points, need 1 to {LIMITS['bullets']}")
+            for label, text in b.get("items", []):
+                if len(label) > LIMITS["point_label"]:
+                    errors.append(f"{at}: point label {label!r} is over {LIMITS['point_label']} chars")
+                check_sentence(at, text)
+        elif kind == "scope":
+            groups = b.get("groups", [])
+            if not groups or len(groups) > LIMITS["groups"]:
+                errors.append(f"{at}: {len(groups)} scope groups, need 1 to {LIMITS['groups']}")
+            for g in groups:
+                if len(g.get("title", "")) > LIMITS["label"]:
+                    errors.append(f"{at}: scope title {g.get('title', '')[:40]!r} is over {LIMITS['label']} chars")
+                if g.get("kind") not in (None, "ask", "later"):
+                    errors.append(f"{at}: scope kind {g['kind']!r}; leave it out, or use ask or later")
+                if not g.get("items") or len(g["items"]) > LIMITS["bullets"]:
+                    errors.append(f"{at}: scope {g.get('title')!r} has {len(g.get('items', []))} items, need 1 to {LIMITS['bullets']}")
+                for text, size in g.get("items", []):
+                    check_sentence(at, text)
+                    if len(size) > LIMITS["size"]:
+                        errors.append(f"{at}: size {size!r} is over {LIMITS['size']} chars; use small, medium or large")
+        elif kind == "flow":
+            if len(b.get("title", "")) > LIMITS["flow_title"]:
+                errors.append(f"{at}: flow title is over {LIMITS['flow_title']} chars")
+            if not b.get("steps") or len(b["steps"]) > LIMITS["bullets"]:
+                errors.append(f"{at}: {len(b.get('steps', []))} flow steps, need 1 to {LIMITS['bullets']}")
+            if not b.get("end"):
+                errors.append(f"{at}: flow needs an end, who gets hurt")
+            for text in b.get("steps", []) + [b.get("end", "")]:
+                check_sentence(at, text)
+            if len(b.get("note", "")) > LIMITS["text"]:
+                errors.append(f"{at}: flow note is over {LIMITS['text']} chars")
         elif kind != "graph":
-            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, mermaid, links, fold, heading, facts or steps")
+            errors.append(f"{at}: unknown block type {kind!r}; use text, bullets, table, graph, mermaid, links, fold, heading, facts, steps, points, scope or flow")
+
+
+def check_sentence(at, text):
+    """One plain line in points, scope and flow: room for a real name and number, not a paragraph."""
+    if len(text) > LIMITS["sentence"]:
+        errors.append(f"{at}: line is {len(text)} chars, max {LIMITS['sentence']}: {text[:40]!r}")
 
 
 def check_mermaid(at, code):

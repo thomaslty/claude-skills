@@ -98,6 +98,24 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
 #out.show { display: block; }
 .general { margin: 24px 0 0; }
 .general h2 { font-size: 15px; margin: 0 0 6px; }
+ul.points { margin: 0; padding-left: 20px; }
+ul.points li { margin: 0 0 8px; }
+ul.points li b { margin-right: 4px; }
+.scope { border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; }
+.scope.ask { border-left-color: var(--warn); }
+.scope.later { border-left-color: var(--line); color: var(--muted); }
+.scope-title { font-weight: 600; margin: 0 0 6px; }
+.scope ul { margin: 0; padding-left: 20px; }
+.scope li { margin: 0 0 6px; }
+.size { display: inline-block; font-size: 11px; font-weight: 600; padding: 0 7px; margin-left: 6px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.flow { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0 0 12px; }
+.flow-title { font-weight: 600; margin: 0 0 10px; }
+.flow-step { display: flex; gap: 10px; align-items: baseline; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.flow-step .n { flex: none; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.flow-step.end { background: var(--t0-soft); border-color: var(--t0); }
+.flow-step.end .n { background: var(--t0); color: var(--panel); }
+.flow-arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; margin: 3px 0; }
+.flow-note { font-size: 13px; color: var(--warn); margin: 10px 0 0; }
 </style>
 </head>
 <body>
@@ -177,7 +195,8 @@ function el(tag, cls, text) {
   return e;
 }
 
-// Structured content only: text (one line), bullets, table, graph (ASCII), mermaid, links, fold.
+// Structured content only: text (one line), bullets, table, graph (ASCII), mermaid, links, fold,
+// points, scope, flow.
 function renderBlocks(blocks, into) {
   for (const b of [].concat(blocks)) {
     if (b.type === "text") into.appendChild(el("p", null, b.text));
@@ -208,6 +227,36 @@ function renderBlocks(blocks, into) {
       const w = el("div", "links");
       b.items.forEach(([label, url]) => { const a = el("a", null, label + " \u2197"); a.href = url; a.target = "_blank"; a.rel = "noopener"; w.appendChild(a); });
       into.appendChild(w);
+    } else if (b.type === "points") {
+      // Point form: a bold label, then one plain sentence with a real name or number.
+      const ul = el("ul", "points");
+      b.items.forEach(([label, text]) => { const li = el("li"); li.appendChild(el("b", null, label + ":")); li.appendChild(inline(text)); ul.appendChild(li); });
+      into.appendChild(ul);
+    } else if (b.type === "scope") {
+      // One box per variant: what it builds, each line with its size.
+      b.groups.forEach(g => {
+        const box = el("div", "scope" + (g.kind ? " " + g.kind : ""));
+        box.appendChild(el("p", "scope-title", g.title));
+        const ul = el("ul");
+        g.items.forEach(([text, size]) => { const li = el("li"); li.appendChild(inline(text)); if (size) li.appendChild(el("span", "size", size)); ul.appendChild(li); });
+        box.appendChild(ul);
+        into.appendChild(box);
+      });
+    } else if (b.type === "flow") {
+      // A risk told as a story: numbered steps top to bottom, the last box is who gets hurt.
+      const box = el("div", "flow");
+      box.appendChild(el("p", "flow-title", b.title));
+      const steps = b.steps.concat([b.end]);
+      steps.forEach((text, i) => {
+        if (i) box.appendChild(el("div", "flow-arrow", "↓"));
+        const last = i === steps.length - 1;
+        const s = el("div", "flow-step" + (last ? " end" : ""));
+        s.appendChild(el("span", "n", last ? "!" : String(i + 1)));
+        s.appendChild(inline(text));
+        box.appendChild(s);
+      });
+      if (b.note) { const n = el("p", "flow-note"); n.appendChild(inline(b.note)); box.appendChild(n); }
+      into.appendChild(box);
     } else if (b.type === "fold") {
       const d = el("details", "fold"), inner = el("div", "blocks");
       d.appendChild(el("summary", null, b.title));

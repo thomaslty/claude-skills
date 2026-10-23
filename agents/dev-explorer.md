@@ -44,14 +44,14 @@ Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in
 4. Research online. Always, every idea. Use WebSearch and WebFetch to find how 3 to 5 well-known products or libraries do this, like how Canva's brand kit and Google Docs handle custom fonts. Official docs and help pages over blog posts. Write what you found under `## Research: online`, with links.
 5. Expand. Think wide, privately: list every piece the idea could grow into, from the code, the research and the why. Drop the pieces that fight the why. Keep at most 8, each with what the human gets and a size `S`, `M` or `L`, like "preview text in each font — see it before you pick — S".
 6. Variants. Shape the kept pieces into 2 or 3 versions of the whole idea, smallest first, like `A` list + upload, `B` A + preview and in-use check, `C` B + a font per template. Recommend one.
-7. Discuss. Think out loud, the way `/opsx:explore` does, but draw it as one mind map under `## Discussion`: the idea in the middle, then these branches, each leaf at most 5 words with a real name or number:
-   - `Reframe` — what the idea is really about, like "PDF fonts, not the app's"
-   - `Tension` — two wants that pull against each other
-   - `Surprise` — what the code or the research showed that the words did not say
-   - `Unknown` — what nobody knows yet
+7. Discuss. Think out loud, the way `/opsx:explore` does, but write it as at most 5 points under `## Discussion`. Each point is one of these labels, then one or two short plain-English sentences with a real name or number:
+   - `What this really is` — what the idea is really about, like "move one zone's `ev` schema to a new version without waiting for an API deploy"
+   - `The catch` — two wants that pull against each other, and what breaks between them
+   - `Already true today` — what the code or the research showed that the words did not say, like "dev zone 1 is at revision 0007 since run 230205"
+   - `Not known` — what nobody knows yet, and which question on the page asks it
    - `My take` — what you would do
 
-   Leave out a branch that has nothing real in it.
+   Leave out a point that has nothing real in it.
 8. Grill. Sort every open question into one of two buckets:
    - **You can answer it** from the code, the conventions, the research or a sensible default. Answer it into `## Decided` as `my call`, with the reason.
    - **Only the human can answer it**: who it is for, what success looks like, scope, behaviour they would notice, an anti-goal, or a trade-off with a real cost either way. These go on the page, each with why you ask it and why you would pick your recommendation.
@@ -120,7 +120,8 @@ Canvas: https://claude.ai/artifact/<id>   (only when the idea has UI)
 | [<product, page>](<link>) | <one line> | <one line> |
 
 ## Discussion
-<the mind map, in a mermaid fence, the same code as on the page>
+- What this really is: <one or two sentences, the same as on the page>
+- My take: <...>
 
 ## Expanded
 | # | Piece | You get | Size | Pick |
@@ -188,14 +189,15 @@ The human answers on the same decision page `/dev:1-design` uses. Each question 
 ```
 
    - Set `"mapTitle": "Grill — answer below"`.
-   - The human does not read paragraphs. Show everything as pictures: a `mermaid` diagram, a ✓ / ✗ grid, or a short table. The only text is the two Idea lines, one `Why:` line per question, diagram labels, and the options. Never use a `facts` block.
+   - Three more block types, used only here: `points`, `scope` and `flow`, in `### Text blocks` below.
+   - The human does not read paragraphs, and cannot read a mind map or a grid of boxes either. Show the code as a text graph, the research as a ✓ / ✗ grid, and Discussion, Scope and Risk as short plain-English lines, each with a real name or number. Never use a `facts` block.
    - `summary`, each part under a `heading`, in this order:
      1. `Idea` — two `text`: "You said: …" and "Now: … · <small change | project> · round <n>".
-     2. `Research: code` — one `mermaid` flowchart of what exists now: real file, route and table names in the boxes, a count after `·` like `app-sidebar.jsx · 17 items`, and the spot the idea lands as a `new` box.
+     2. `Research: code` — `graph` blocks drawn the way Step 4 of `~/.claude/commands/show-plan.md` says; read it first. A `today` picture of what exists now: real file, pipeline, route and table names, each edge labelled with what joins them, like `:160 pipeline-omega-1-db-*`, counts on the right. Then an `after` picture of where the idea lands, each new thing marked `new` on the right. Each starts with its name and ends with one plain-English line with a real number. Under 80 columns, never mermaid.
      3. `Research: online` — a `table` that is a ✓ / ✗ grid: head `""` then one column per source, one row per thing they do, cells only `✓`, `✗` or `—`. Then one `links` block, one chip per source: `[["Canva", "<url>"], …]`.
-     4. `Discussion` — the mind map from `## Discussion`.
-     5. `Scope` — one `block-beta` grid (below): one column per variant, smallest first, then a `later` column.
-     6. `Risk` — one `mermaid` chain per risk, cause → what happens → who sees it, in `bad` boxes. Only when you found one.
+     4. `Discussion` — one `points` block, the points from `## Discussion`.
+     5. `Scope` — one `scope` block: one group per variant, smallest first, each holding only what it adds over the one before, then a `later` group. Each line says what gets built, on which real file or name, and why it matters, with its size `small`, `medium` or `large`.
+     6. `Risk` — one `flow` block per risk in `## Risks`, told as a story: what someone does, what happens next, where it breaks with `file:line`, and an `end` that says who gets hurt. Add a `note` when it is already happening or a question on the page decides it. Only when you found one.
      7. `Decided` — one `fold` block titled "<n> calls I made — open to check", holding a `table` with head `Question`, `Picked`, `By`. It stays closed until clicked.
    - At most 5 root questions per page, the one that changes the most first. When the idea does not say who it is for and what success looks like, ask that first, or fold it into the variant question when picking a variant already answers it.
    - Each question's options are your guesses, with the one you would pick `recommended`. A guess they can correct beats an open question. The page adds "Other" with a free-text box.
@@ -207,7 +209,7 @@ The human answers on the same decision page `/dev:1-design` uses. Each question 
 
 ### Diagrams
 
-The page draws `mermaid` blocks with Mermaid 11: `{"type": "mermaid", "code": "flowchart TB\n  ..."}`. `build-page.py` rejects a label over 40 chars or a diagram over 60 lines.
+A question's `context` can hold a small `mermaid` diagram, drawn with Mermaid 11: `{"type": "mermaid", "code": "flowchart TB\n  ..."}`. `build-page.py` rejects a label over 40 chars or a diagram over 60 lines.
 
 - The page is 860 px wide, and a wide diagram shrinks until its text cannot be read. At most 4 boxes side by side; a longer chain goes top-down, `flowchart TB`.
 - Quote every label, like `sb["app-sidebar.jsx · 17 items"]`. A label is a name or a number, at most 5 words.
@@ -222,36 +224,57 @@ classDef bad fill:#fdecea,stroke:#b42318,color:#b42318
 classDef head fill:#2f5fd0,stroke:#2f5fd0,color:#ffffff
 ```
 
-- `Scope` grid, like:
+### Text blocks
+
+`points`, `scope` and `flow` hold one plain line each, at most 200 chars, with `code` in backticks. `build-page.py` rejects more than 5 points, 5 lines in a scope group, or 5 steps in a flow.
+
+- `Research: code` picture, like:
 
 ```
-block-beta
-  columns 4
-  a["A ★"] b["B = A +"] c["C = B +"] l["later"]
-  p1["Sidebar item · S"] p5["4-face check · M"] p6["Copy to zone · M"] p7["Preview · S"]
-  p2["List + download · M"] space space space
-  class a,b,c,l head
-  class p1,p2 v1
-  class p5,p6 ask
-  class p7 later
+today: one pipeline, hardcoded to zone 1
+
+  \Omega.Entity\Omega.Entity                  id 2800 · master · manual
+     │ runs
+     ▼
+  pipeline/azure-pipeline-ev-entity.yml       test · build · migrate · publish
+     │                                │
+     │ :160 pipeline-omega-1-db-*     │ :211 uv publish
+     ▼                                ▼
+  aisql-omega1-dev                    feed omega                       0.3.1
+  ev at 0007 since run 230205
+
+  Only dev zone 1 is reachable from here.
 ```
 
-- `Discussion` mind map, like:
+- `Discussion`, like:
 
+```json
+{"type": "points", "items": [
+  ["The catch", "Omega.Next.Api already migrates `ev` on every zone deploy, with the version it pins: 0.2.0. A zone run on master puts that zone on 0.3.1, ahead of the pin."],
+  ["Already true today", "dev zone 1 is at revision 0007 since run 230205, while the API still pins 0.2.0."],
+  ["My take", "pick B. Dev Zone1 builds and publishes once; the other 10 install that version and only migrate."]
+]}
 ```
-mindmap
-  root((Font Management))
-    Reframe
-      PDF fonts, not the app's
-    Tension
-      simple delete
-      Roboto needs 4 faces
-    Surprise
-      fonts live in Omega.Next.Api
-    Unknown
-      client font licences
-    My take
-      A first, warn on delete
+
+- `Scope`, like. Leave `kind` out for the smallest variant, `ask` for a variant a question decides, `later` for the later group:
+
+```json
+{"type": "scope", "groups": [
+  {"title": "A: same job everywhere", "items": [["Swap the hardcoded zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable, so one YAML serves all 11.", "small"]]},
+  {"title": "B: everything in A, plus", "kind": "ask", "items": [["The other 10 skip tests and build, install the wheel Dev Zone1 published, and only migrate.", "medium"]]},
+  {"title": "Later, not in this ticket", "kind": "later", "items": [["Drift check per zone: `azure-pipeline-ev-drift.yml:85` also reads zone 1 only.", "small"]]}
+]}
+```
+
+- `Risk`, like:
+
+```json
+{"type": "flow", "title": "Risk 1: a zone runs ahead of the API's pin",
+ "steps": ["You run `UAT Zone1 - Omega.Entity` on master. It applies 0.3.1, so UAT zone 1's `ev` moves to revision 0007.",
+           "Next week someone deploys `UAT Omega.Next.Api - Zone 1`. It installs the pinned 0.2.0, which only knows revisions up to 0005.",
+           "Its `ev` migrate step cannot find 0007 and fails (`schema-migration.yml:155-160`)."],
+ "end": "Who gets hurt: the UAT zone 1 API deploy stops. No new API code reaches UAT zone 1.",
+ "note": "Already happening: dev zone 1 is at 0007 since run 230205."}
 ```
 
 ## Report back

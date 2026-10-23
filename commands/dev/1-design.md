@@ -12,7 +12,7 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 
 1. Find the ticket (below). The rest of this command works from `plan/<slug>/ticket.md`.
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
-3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then spawn `dev-designer` with `ticket: plan/<slug>/ticket.md`.
+3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and spawn `dev-designer` with `ticket: plan/<slug>/ticket.md` only when it needs one.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
@@ -21,14 +21,25 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
    - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches, sends only the changed artboards to the same canvas, and rebuilds the page. Never start a full redesign for a change.
      - Spawn a NEW `dev-designer` with `ticket` and `change: <their words>`. Never SendMessage the last one: it still holds the whole first design, like 324k tokens on Ticket 1, so every turn is slower and after a break its cache is gone.
      - Then reopen the page and back to step 4.
-   - Both spawns pass `effort: medium`. Only the first design in step 3 runs at the default effort.
+   - Both spawns pass `effort: medium`. Only a full design in step 3 runs at the default effort.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
 7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.
 
+## How much design is left
+
+A ticket with `## Explored` was explored first: `/dev:0-explore` already researched, scoped and grilled it, and its brief is `plan/<slug>/idea.md`. Read the brief yourself, never the code, then pick one of these and say which in one line, with why:
+
+- Nothing left to design → write the plan yourself, no designer and no page. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
+  - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
+  - Set `Status: approved`, go to step 6, and skip step 7.
+- Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
+- Not explored → spawn `dev-designer` with `ticket` at the default effort, a full design.
+
 ## Where files go
 
-- `plan/<slug>/` is markdown only, and it is committed: `ticket.md` and `plan.md`
+- `plan/<slug>/` is markdown only, and it is committed: `ticket.md`, `plan.md`, and `idea.md` when the idea was explored first
 - `dev/<slug>/` is everything else, and it is gitignored, one subfolder per kind:
+  - `explore/` for `/dev:0-explore`: its page, `canvas/`, `research/` with the raw output it cited, and `round<n>-answers.json`
   - `attachments/` for the ticket's own files, like the CSVs on a Notion page
   - `design/` for `decisions.json` and `decisions.html`
   - `canvas/` for the Claude Design project

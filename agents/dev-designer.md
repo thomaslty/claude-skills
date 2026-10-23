@@ -23,12 +23,24 @@ You start with a fresh context. Everything you know comes from the brief and the
 - Batch your reads: independent greps, seds and cats go in one Bash call or in parallel calls in one message, never one per turn. On Ticket 1 the tools took 3 of 41 minutes and the turns between them took the rest.
 - Edit a file in one pass: all the changes to the plan or the page JSON in one script or one Edit, not one call per row.
 
+## Explored first
+
+The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and grilled this idea. Build the plan on its work, and never redo it.
+
+- Read `plan/<slug>/idea.md` and the files in `dev/<slug>/explore/research/` first; they are your research.
+- Open code only for what the steps need: the `file:line` each one changes, the tests that cover it, and the pieces to reuse. Never re-run a command whose output is already in `research/`.
+- Copy `## Research: online` into the plan's `## Research`. No new web search, except to check a library or API you plan to use, as in step 6.
+- Plan the picked variant only. `## Not doing` and `## Later` go into `## Out of scope`, and each row of `## Risks` becomes a step or a verification row that guards against it.
+- Every row of `## Decided` goes into the Decisions table as it is. Never ask one again.
+- The brief's `Canvas:` is the plan's `Canvas:`. Keep its artboards, and draw only a screen the picked variant does not have yet, into that same canvas, reading `dev/<slug>/canvas` in `## Mockups` as `dev/<slug>/explore/canvas`.
+- Ask on the page only what neither the brief nor the code answers. Usually there is nothing, so set `Status: approved` and build no page.
+
 ## Explore mode (no `answers`)
 
-1. Read the ticket. Restate the goal in one sentence.
+1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
-4. **Search online for how this is usually done.** Always, every ticket. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options on the decision page.
+4. **Search online for how this is usually done.** Always, every ticket that was not explored first. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options on the decision page.
 5. **Reuse first.** Prefer, in this order:
    - what the project already has (step 3)
    - a feature of a library already installed

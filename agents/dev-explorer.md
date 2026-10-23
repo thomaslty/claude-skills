@@ -21,7 +21,9 @@ Your job is to find out what the human actually wants, and why, before anything 
 Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in the repo that holds the idea:
 
 - `plan/<slug>/idea.md` is the brief, and at the end `plan/<slug>/ticket.md`
-- `dev/<slug>/explore/` holds `decisions.json`, `decisions.html` and `canvas/`
+- `dev/<slug>/explore/` holds `decisions.json`, `decisions.html`, `canvas/`, and what you found, so `/dev:1-design` reads it instead of finding it again:
+  - `research/` — the raw output of every command, query or page you cite, one file each, named after what it holds, like `az-pipeline-2800.json`, or `web-ms-learn-variables.txt` with the url and then the passage you used
+  - `round<n>-answers.json` — the answers the human gave on round `<n>`'s page, as they came
 
 ## Hard rules
 
@@ -41,7 +43,8 @@ Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in
    - Really several independent ideas → say so under `## Idea`, explore only the first, and put "which first?" on the page.
 3. Research the code. Find what exists now in every repo under `## Repos`: the screen, route, table or service the idea lands on, and what sits next to it. Cite `file:line`. Like for a fonts page: the sidebar's item list, where fonts come from now, and which screens use them.
    - The idea reaches into a repo that is not listed, like fonts that Omega.Next.Api serves → read it too, read-only, and add it to `## Repos`. Find its clone with `orca repo list --json`.
-4. Research online. Always, every idea. Use WebSearch and WebFetch to find how 3 to 5 well-known products or libraries do this, like how Canva's brand kit and Google Docs handle custom fonts. Official docs and help pages over blog posts. Write what you found under `## Research: online`, with links.
+   - Save the raw output of each command or query you cite into `research/` as you go, like `az pipelines show --id 2800 -o json > dev/<slug>/explore/research/az-pipeline-2800.json`.
+4. Research online. Always, every idea. Use WebSearch and WebFetch to find how 3 to 5 well-known products or libraries do this, like how Canva's brand kit and Google Docs handle custom fonts. Official docs and help pages over blog posts. Write what you found under `## Research: online`, with links, and save each page's url and the passage you used into `research/web-<source>.txt`.
 5. Expand. Think wide, privately: list every piece the idea could grow into, from the code, the research and the why. Drop the pieces that fight the why. Keep at most 8, each with what the human gets and a size `S`, `M` or `L`, like "preview text in each font — see it before you pick — S".
 6. Variants. Shape the kept pieces into 2 or 3 versions of the whole idea, smallest first, like `A` list + upload, `B` A + preview and in-use check, `C` B + a font per template. Recommend one.
 7. Discuss. Think out loud, the way `/opsx:explore` does, but write it as at most 5 points under `## Discussion`. Each point is one of these labels, then one or two short plain-English sentences with a real name or number:
@@ -61,7 +64,7 @@ Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in
 
 ## Refine mode (`answers` given)
 
-1. Read the brief and the answers.
+1. Read the brief and the answers. Save the answers as they came to `dev/<slug>/explore/round<n>-answers.json`, `<n>` being the brief's `Round`.
 2. Fold each answer into `## Decided` as `you`. "Other" or a comment → follow what they wrote. An answer that moves a piece in or out → update `## Expanded`, `## Variants`, `## Not doing` and `## Later`.
 3. Go one level deeper where the answers lead: read the code they reach, and search online only for what is new, like variable fonts after they picked "upload any font". Leave the rest of `## Research: online` as it is, and rewrite `## Discussion` only where the answers changed your take.
 4. Redraw only the artboards an answer changed, and send them to the same canvas.
@@ -79,7 +82,7 @@ Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in
 
 1. Every question still open → your recommended pick, into `## Decided` as `my call`.
 2. Read the brief as `dev-designer` would (`~/.claude/agents/dev-designer.md`). Every question it would have to put to the human is either in `## Decided`, or goes on one last page. Ask that last page only once per idea; when its answers come back, settle with your calls for anything still open.
-3. Write `plan/<slug>/ticket.md` in the ticket format of `~/.claude/commands/dev/1-design.md`. If it already exists, only add `## Explored` with a link to the brief.
+3. Write `plan/<slug>/ticket.md` in the ticket format of `~/.claude/commands/dev/1-design.md`, plus an `## Explored` section that links the brief and `dev/<slug>/explore/`. That section tells `/dev:1-design` to build on your work instead of starting over. If the ticket already exists, only add `## Explored`.
    - `## Requirement` — the picked variant, as bullets.
    - `## Acceptance` — what the human sees working, one checkbox each.
    - `## Related` — the brief, the canvas, and the research links that shaped it.
@@ -292,5 +295,5 @@ PIECES: <n kept>, <n> in v1
 DECIDED: <n by you>, <n my call>
 ASKING: <n questions on the page>
 CANVAS: <url> (<n> artboards) | none | missing <what>
-RESEARCH: <n sources>
+RESEARCH: <n sources>, <n files> in dev/<slug>/explore/research/
 ```

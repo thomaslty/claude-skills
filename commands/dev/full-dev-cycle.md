@@ -30,7 +30,7 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
 7. Open every HTML page with `decision-page.py open <page>`, which puts it in a new Orca browser tab. Never `open <page>` yourself; the script falls back to the system browser only outside Orca.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.
-9. Every phase runs on a local database, never a real env, dev included. When the implementer reports `STATUS: needs-db`, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
+9. Every phase reads dev as it likes and writes to a local database only, the way "Database: read dev, write local" in `/dev:development-guideline` says. When the implementer reports `STATUS: needs-db`, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
 
 ## Other repos
 

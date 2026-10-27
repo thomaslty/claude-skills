@@ -15,7 +15,7 @@ You are the coordinator. The build runs in a fresh `dev-implementer` agent.
    - Requirement text, or a plan still in `draft` → run `/dev:1-design` instead (read `~/.claude/commands/dev/1-design.md` and follow it), then stop. The build starts only when the user runs `/dev:2-implement` on the approved plan.
    - Empty → use the only approved plan in `plan/`, or ask in one line.
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py implement`
-3. Spawn `dev-implementer` with `plan: <path>`.
+3. Spawn `dev-implementer` with `plan: <path>`. When the plan's `## Repos` has 2 or more repos, check first if they can build in parallel (below).
 4. Read its report.
    - Check the plan with `python3 ~/.claude/scripts/dev/plan-status.py plan/<slug>/plan.md`. Trust its `done` and `left`, not the agent's report.
    - Check the change with `openspec status --change <slug> --json`, run in the repo that holds the plan. No change → the agent wrote code without a spec. Spawn a NEW `dev-implementer` on the same plan, and tell it to write the change before anything else.
@@ -31,9 +31,19 @@ You are the coordinator. The build runs in a fresh `dev-implementer` agent.
 5. Spawn `dev-convention-learner` with `phase: implement` and `plan`.
 6. Tell the user what now works, with the evidence path from `VERIFIED`, the OpenSpec change path from `CHANGE`, and the next step: `/dev:3-review plan/<slug>/plan.md`.
 
+## One implementer per repo
+
+Read only the plan's `## Matrix`. Group the steps by the worktree their `Touches` starts with. No step's `Depends on` names a step in another group → the repos build in parallel:
+
+1. Spawn one `dev-implementer` with `plan` and `only: change`. It writes the OpenSpec change and gets the local database ready. `STATUS: needs-db` → handle it as step 4 says, then spawn it again.
+2. Spawn one `dev-implementer` per repo in ONE message, each with `plan` and `repo: <its worktree>`.
+3. When all have reported, spawn one more `dev-implementer` with `plan`. Every step is ticked by then, so it goes straight to the plan's `## Verification`. Read its report as step 4 says.
+
+A step that needs another repo's step, like a frontend step that calls the new API → one implementer for the whole plan, as before.
+
 ## Local database
 
-The build runs on a local database only, never a real env, dev included. The agent's rules are in `~/.claude/agents/dev-implementer.md` under "Local database, never a real env". The toolkit is `uv run ~/.claude/scripts/dev/localdb.py`, run it with no command for its help.
+The build writes to a local database only; reading dev is fine. The rules are "Database: read dev, write local" in `~/.claude/commands/dev/development-guideline.md`. The toolkit is `uv run ~/.claude/scripts/dev/localdb.py`, run it with no command for its help.
 
 ## Cross-References
 

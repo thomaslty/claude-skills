@@ -33,7 +33,17 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
   - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the `Research: code` graphs in `dev/<slug>/explore/decisions.json`, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
   - Set `Status: approved`, go to step 6, and skip step 7.
 - Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
-- Not explored → spawn `dev-designer` with `ticket` at the default effort, a full design.
+- Not explored → research in parallel first (below), then spawn `dev-designer` with `ticket` at the default effort, a full design.
+
+## Research in parallel
+
+A full design gets its research done before the designer starts, so the designer reads files instead of searching one thing after another. Spawn these `dev-researcher` agents in ONE message, each with `brief: plan/<slug>/ticket.md` and `out: dev/<slug>/design/research/`:
+
+- `topic: code`, `topic: web` and `topic: db`, always
+- the ticket has a `Notion:` or `Drive:` line → `topic: notion` or `topic: drive`, with `ref: <that url>`
+- one more per Notion, Drive or Jira link under the ticket's `## Related`, with its kind as `topic` and the link as `ref`, like `topic: drive, ref: https://docs.google.com/document/d/1AbC/edit`
+
+Wait for all of them. Each returns one line; pass none of it on, the designer reads the files. A line that says `needs authentication` → call that MCP's `authenticate` tool, give the user the link in one line, and wait.
 
 ## Where files go
 
@@ -41,7 +51,7 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
 - `dev/<slug>/` is everything else, and it is gitignored, one subfolder per kind:
   - `explore/` for `/dev:0-explore`: its page, `canvas/`, `research/` with the raw output it cited, and `round<n>-answers.json`
   - `attachments/` for the ticket's own files, like the CSVs on a Notion page
-  - `design/` for `decisions.json` and `decisions.html`
+  - `design/` for `decisions.json`, `decisions.html`, and `research/` with what the researchers found
   - `canvas/` for the Claude Design project
   - `evidence/` for screenshots and API answers
   - `review/` for `<lens>.json`, `findings.json`, `review.html`, and `round<n>/` for earlier rounds
@@ -63,25 +73,27 @@ python3 ~/.claude/scripts/dev/ticket-source.py "$ARGUMENTS"
 | `file` | use `path` as is | `slug` |
 | `jira` | `orca jira issue <key> --json` | `slug` |
 | `notion` | `notion-fetch` the `page_id` | `--slugify "<title>"` |
+| `drive` | `read_file_content` the `file_id` | `--slugify "<title>"` |
 | `text` | use `text` as the requirement | `slug` |
 | `ask` | ask for the ticket in one line | — |
 
 - `note` is anything typed next to the link, like "keep it small". Put it under `## Notes`.
+- `refs` are the other links passed with the ticket. Put each under `## Related`, like `- drive: https://docs.google.com/document/d/1AbC/edit — passed with the ticket`, so each gets its own researcher.
 - **Jira:** if `orca jira issue` fails, use the Atlassian MCP with the same `key`.
 - **Notion:** `page_id` is already the ticket, also when the link was a database view with `p=`. Then:
   - Turn `user://<id>` mentions into names with `notion-get-users`.
-  - Download the page's files into `dev/<slug>/attachments/` and list them under `## Related`.
   - Carry the page's tables and mermaid flows into the ticket as they are, and cut the prose to bullets.
-  - Search Notion (`notion-search`) for the title and its key terms. Read the matching specs, designs and earlier tickets, and put what matters under `## Related`, with links.
+  - The page's files and the search for related pages are the `notion` researcher's job (above), not yours.
+- **Drive:** `read_file_content` from the Google Drive MCP. Keep its tables as they are and cut the prose to bullets; its images and the rest of a folder are the `drive` researcher's job.
 - **Pasted Notion text** comes back as `text`. Search Notion for its first line to find the page, then treat it as `notion`.
-- **MCP needs sign-in** (Notion or Atlassian shows `needs authentication`) → call its `authenticate` tool, give the user the link in one line, and wait.
+- **MCP needs sign-in** (Notion, Drive or Atlassian shows `needs authentication`) → call its `authenticate` tool, give the user the link in one line, and wait.
 
 Write `plan/<slug>/ticket.md` unless it already exists:
 
 ```markdown
 # <issue title>
 
-Jira: THLAU-1          (or)  Notion: <url from the parser>
+Jira: THLAU-1          (or)  Notion: <url from the parser>  (or)  Drive: <url>
 
 ## Requirement
 <the issue description, trimmed, as bullets>

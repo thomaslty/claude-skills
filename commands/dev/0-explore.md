@@ -13,7 +13,7 @@ Explore is for exploring, grilling and refining an idea. `/dev:1-design` crafts 
 ## Steps
 
 1. Find the idea (below). The rest of this command works from `plan/<slug>/idea.md`.
-2. Spawn `dev-explorer` with `idea: plan/<slug>/idea.md`.
+2. The brief says `Round: 0` → research in parallel first (below). Then spawn `dev-explorer` with `idea: plan/<slug>/idea.md`.
 3. Read its report.
    - `STATUS: needs-answers` → open the page (below), run `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`, then tell the user in two lines: the page path with the canvas link, and "pick on the page, then type `done` here (or press Copy and paste the JSON); type `settle` to stop exploring". Stop and wait.
    - `STATUS: settled` or `too-small` → step 5.
@@ -35,18 +35,22 @@ python3 ~/.claude/scripts/dev/ticket-source.py "$ARGUMENTS"
 ```
 
 - `file` named `idea.md` → an idea already explored. `Status: settled` → step 5. Its page is there → open it and wait for answers, as in step 3. Otherwise step 2.
-- Any other `file`, `jira`, `notion` or `text` → write the seed below unless it already exists, then step 2.
+- Any other `file`, `jira`, `notion`, `drive` or `text` → write the seed below unless it already exists, then step 2.
 - `ask` → ask for the idea in one line.
+- `refs` → one line each under the seed's `## Related`, like `- drive: https://docs.google.com/document/d/1AbC/edit`.
 
 ```markdown
 # <idea title, or the first words of the idea>
 
 Status: exploring
 Round: 0
-Source: typed  (or)  Jira: THLAU-1  (or)  Notion: <url>
+Source: typed  (or)  Jira: THLAU-1  (or)  Notion: <url>  (or)  Drive: <url>
 
 ## Said
-> <the user's words verbatim; for Jira or Notion, the issue text trimmed>
+> <the user's words verbatim; for Jira, Notion or Drive, the issue text trimmed>
+
+## Related
+- <kind>: <url>   (one per `refs` entry; leave the section out when there are none)
 
 ## Repos
 | Repo | Path |
@@ -58,6 +62,16 @@ Source: typed  (or)  Jira: THLAU-1  (or)  Notion: <url>
 ```
 
 - The idea names another repo, like "in omrobot" → add a row for it. Find its clone with `orca repo list --json`, else ask for the path in one line. Explore only reads code, so it needs no worktree; never make one here.
+
+## Research in parallel
+
+Round 1 gets its research done before the explorer starts, so the explorer reads files instead of searching one thing after another. Spawn these `dev-researcher` agents in ONE message, each with `brief: plan/<slug>/idea.md` and `out: dev/<slug>/explore/research/`:
+
+- `topic: code`, `topic: web` and `topic: db`, always
+- the seed has a `Notion:` or `Drive:` source → `topic: notion` or `topic: drive`, with `ref: <that url>`
+- one more per line under the seed's `## Related`, with its kind as `topic` and the url as `ref`
+
+Wait for all of them. Each returns one line; pass none of it on, the explorer reads the files. A line that says `needs authentication` → call that MCP's `authenticate` tool, give the user the link in one line, and wait.
 
 ## Open the page
 

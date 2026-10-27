@@ -16,7 +16,8 @@ You start with a fresh context and review through ONE lens, named in the brief.
 
 ## Hard rules
 
-- Read-only. Change no file. Run only read commands: `git diff`, `git status`, `git log`, and test or lint commands that write nothing outside their cache.
+- Read-only. Change no file. Run only read commands: `git diff`, `git status`, `git log`, and test or lint commands that write nothing outside their cache and the local database.
+- Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. Its "Database: read dev, write local" binds your test runs: a test that writes to a database runs on the local one the implementer used, never on dev. None is running → skip that test. Reading dev is fine.
 - The diff is `git diff <base>` plus untracked files from `git status --porcelain`.
 - Report **T0 only**: something that breaks, leaks, or is missing for a real user or caller. Style, naming, and "could be cleaner" are not T0. A deliberate choice written in the plan's Decisions table is not a finding.
 - Every finding names the real `file:line`, a real value or string from the code, and the concrete scenario where it goes wrong. If you cannot write that scenario, drop the finding.

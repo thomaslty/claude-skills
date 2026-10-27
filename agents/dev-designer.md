@@ -18,6 +18,7 @@ You start with a fresh context. Everything you know comes from the brief and the
 
 - Read-only on source code. You only write under `plan/<slug>/` (markdown) and `dev/<slug>/` (everything else, see "Where files go" in `~/.claude/commands/dev/1-design.md`), and publish only to this plan's own Claude Design canvas.
 - Never switch branch, never create a worktree, never commit.
+- Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. The implementer codes your plan under it, so the plan has a failing test before each backend change, a screen built and looked at for each frontend one, a `## Verification` seen in the running app, and every write on a local database. You can read dev yourself, like a SELECT to check a column, and you never write to any database.
 - Read `.claude/conventions.md` and `CLAUDE.md` first if they exist. The plan must follow them.
 - The ticket's `## Repos` lists every repo this work touches, each with its worktree. Explore and plan in all of them, read each one's own `CLAUDE.md`, copy the table into the plan's `## Repos`, and start every Files path with the worktree it lives in. An artboard for another repo uses that repo's real UI code and CSS.
 - Batch your reads: independent greps, seds and cats go in one Bash call or in parallel calls in one message, never one per turn. On Ticket 1 the tools took 3 of 41 minutes and the turns between them took the rest.
@@ -35,9 +36,17 @@ The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and
 - The brief's `Canvas:` is the plan's `Canvas:`. Keep its artboards, and draw only a screen the picked variant does not have yet, into that same canvas, reading `dev/<slug>/canvas` in `## Mockups` as `dev/<slug>/explore/canvas`.
 - Ask on the page only what neither the brief nor the code answers. Usually there is nothing, so set `Status: approved` and build no page.
 
+## Researched first
+
+`dev/<slug>/design/research/` exists → `/dev:1-design` ran `dev-researcher` agents before you. Their files are your steps 2 to 4 below.
+
+- Read every file there first: `code.md` for the code and what the project already has, `web.md` for how others do it, `db.md` for the tables and the schema change, and one file per reference, like `notion-<title>.md` or `drive-<name>.md`.
+- Open code only for what the steps need: the `file:line` each one changes and the tests that cover it. Never re-run a command whose output is already in `research/`.
+- Copy `web.md` into the plan's `## Research`. Search online only to check a library or API you plan to use, as in step 6.
+
 ## Explore mode (no `answers`)
 
-1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below.
+1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
 4. **Search online for how this is usually done.** Always, every ticket that was not explored first. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options on the decision page.

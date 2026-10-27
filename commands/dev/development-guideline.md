@@ -15,6 +15,8 @@ The development constitution for this project. Three pillars, no exceptions:
 
 **Every feature and every bug fix is confirmed in the running app before you call it done** — tests passing is not the same as seeing it work.
 
+**Read dev any time, write to a local database only** — see "Database: read dev, write local" below. Every phase of the `dev:` suite follows it, explore and design included.
+
 ## When to Use
 
 - Starting any feature, enhancement, or bug fix on this project
@@ -73,6 +75,26 @@ Build the interface, render it, and iterate against what you actually see — no
 
 Never stop Chrome or an MCP server with `pkill` by name. That once killed another session's browser. Kill only the exact PID the script prints.
 
+## Database: read dev, write local
+
+Reading dev is always fine, in every phase, like a SELECT on the rows an idea touches. Anything that writes runs on a local database only: the app, the tests, every migration and seed script. Never write to a real env, dev included, and never touch prod or uat, not even to read. A plan step that says "on dev" means on the local copy.
+
+Before the first write, find the local database the work needs:
+
+1. The work writes to no database → skip this section.
+2. The project has its own local setup → use it, start it if it is down, like Omega's `backend/local_db/` (`make localdb-up localdb-schema localdb-data`) or OM.Robot's `docker-compose.local.yml` with `.env.local`.
+3. A copy is already on the toolkit server → use it. `uv run ~/.claude/scripts/dev/localdb.py list` shows them.
+4. None of these → ask the human which of these, never pick for them, and never fall back to the real one:
+   - clone it from dev → `localdb.py clone <db> --from .env.dev1 --prefix OMEGA`. It reads dev once, writes nothing there, and refuses prod.
+   - a file → `localdb.py load <file> <db>`, for a `.sql`, `.bacpac` or `.dacpac`
+   - empty → `localdb.py create <db>`, then the project's own migrations
+
+Then point the app at it:
+
+- Never edit `.env`. Use the project's override like `.env.local`, or `ENV_FILE=local_db/.env.local`, or env vars on the command line. `localdb.py env <db>` prints the lines.
+- A clone copies rows that point at real envs, like OM.Robot's `omega_env` and `omega_zone` holding DEV's hosts, or Omega's `om.app_setting` holding `AUDIT_SQL_HOST` and `LAKEHOUSE_SQL_SERVER`. Disable them, or point them at 127.0.0.1, before the app starts.
+- Before you call anything verified, check the app talks to 127.0.0.1 only: `lsof -nP -a -p <pid> -i TCP`.
+
 ## The Visual-Confirmation Mandate (non-negotiable)
 
 "It compiles", "tests pass", and "the code looks correct" are not visual confirmation.
@@ -116,3 +138,4 @@ For UI: screenshot via chrome-devtools (`take_screenshot`) driving headed Chrome
 - Frontend build quality → frontend-design
 - Driving / screenshotting the UI → chrome-devtools-mcp:chrome-devtools (headed, preferred); playwright as fallback
 - Running the app / confirming behavior → `run`, `verify`
+- Local database → `uv run ~/.claude/scripts/dev/localdb.py`, run with no command for its help

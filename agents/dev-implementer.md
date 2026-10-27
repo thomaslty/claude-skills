@@ -12,6 +12,11 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
 - `plan` — path to `plan/<slug>/plan.md` with `Status: approved`.
 - `fixes` — optional. Review findings the human chose to fix, as JSON. When present, you do only those.
 - `db` — optional. What the human picked when there was no local database, like `clone .env.dev1 --prefix OMEGA`.
+- `only: change` — optional. Write the OpenSpec change and get the local database ready, then report. Do no step.
+- `repo` — optional. One worktree from the plan's `## Repos`. Other implementers build the other repos at the same time, so:
+  - do only the steps whose `Touches` is in this worktree, and leave the plan's `## Verification` to the implementer that runs after you all
+  - drive the browser with headless Playwright only, since chrome-devtools has one browser for all of you
+  - tick and append with one Edit each time, never by rewriting the whole plan or `tasks.md`
 
 ## Hard rules
 
@@ -39,28 +44,12 @@ The work is spec-driven: the approved plan becomes an OpenSpec change in the rep
 
 From here on you code from both documents: the plan says what to change and how you will see it working, and the change says what must stay true. Leave the change active; `/dev:finishing-development` archives it when the work lands.
 
-## Local database, never a real env
+## Local database
 
-The app, the tests, every migration, seed script and query run against a local database. Never against a real env: not prod, not uat, and not dev either, not even to read. A plan step that says "on dev" means on the local copy.
+Before step 1, follow "Database: read dev, write local" in the guideline. You run unattended, so two things differ:
 
-Before step 1, find the local database the work needs:
-
-1. The work touches no database → skip this section.
-2. The project has its own local setup → use it, start it if it is down, like Omega's `backend/local_db/` (`make localdb-up localdb-schema localdb-data`) or OM.Robot's `docker-compose.local.yml` with `.env.local`.
-3. A copy is already on the toolkit server → use it. `uv run ~/.claude/scripts/dev/localdb.py list` shows them.
-4. None of these → stop before step 1 and report `STATUS: needs-db`, with the database and the env file that names it in `DB:`, like `aisql-omega1-dev from .env.dev1 (OMEGA_)`. Never fall back to the real one.
-
-When the brief has `db:`, do what the human picked, with `~/.claude/scripts/dev/localdb.py`:
-
-- clone → `localdb.py clone <db> --from .env.dev1 --prefix OMEGA`. This reads dev once and writes nothing there. It is the only time a real env is touched, and it refuses prod.
-- a file → `localdb.py load <file> <db>`, for a `.sql`, `.bacpac` or `.dacpac`
-- empty → `localdb.py create <db>`, then the project's own migrations
-
-Then point the app at it:
-
-- Never edit `.env`. Use the project's override like `.env.local`, or `ENV_FILE=local_db/.env.local`, or env vars on the command line. `localdb.py env <db>` prints the lines.
-- A clone copies rows that point at real envs, like OM.Robot's `omega_env` and `omega_zone` holding DEV's hosts, or Omega's `om.app_setting` holding `AUDIT_SQL_HOST` and `LAKEHOUSE_SQL_SERVER`. Disable them, or point them at 127.0.0.1, before the app starts.
-- Before you call anything verified, check the app talks to 127.0.0.1 only: `lsof -nP -a -p <pid> -i TCP`.
+- Its step 4 → do not ask. Stop before step 1 and report `STATUS: needs-db`, with the database and the env file that names it in `DB:`, like `aisql-omega1-dev from .env.dev1 (OMEGA_)`.
+- The brief has `db:` → do what the human picked, with the `localdb.py` command the guideline gives for it.
 
 ## Loop
 

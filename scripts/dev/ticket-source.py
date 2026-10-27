@@ -9,10 +9,12 @@ Prints one JSON object. `kind` is one of:
   file    a plan/<slug>/ticket.md or idea.md  -> path, slug
   jira    a Jira URL or key, like THLAU-1     -> key, url, slug
   notion  a Notion link                       -> page_id, url (slug: --slugify the fetched title)
+  drive   a Google Drive or Docs link         -> file_id, url (slug: --slugify the fetched title)
   text    plain requirement text              -> text, slug
   ask     nothing to go on                    -> reason
 `via` says how it was found: argument, tickets-dir, or orca-link.
-`note` holds any text typed next to a link.
+`note` holds any text typed next to the links.
+`refs` holds every other Jira, Notion or Drive link after the first, each shaped like the above.
 """
 import json
 import pathlib
@@ -66,6 +68,14 @@ def from_url(url):
             return {"kind": "ask", "reason": f"no Jira key in {url}"}
         return {"kind": "jira", "key": key, "url": f"{u.scheme}://{u.netloc}/browse/{key}", "slug": key}
 
+    if host in ("docs.google.com", "drive.google.com"):
+        # /document/d/<id>/edit, /file/d/<id>/view, /drive/folders/<id>, or open?id=<id>
+        m = re.search(r"/(?:d|folders)/([A-Za-z0-9_-]{10,})", u.path)
+        file_id = m.group(1) if m else (query.get("id") or [None])[0]
+        if not file_id:
+            return {"kind": "ask", "reason": f"no Drive file id in {url}"}
+        return {"kind": "drive", "file_id": file_id, "url": url}
+
     return None
 
 
@@ -109,12 +119,25 @@ def resolve(arg, root):
     if JIRA_KEY.match(arg):
         return {"kind": "jira", "key": arg, "url": None, "slug": arg, "via": "argument"}
 
-    m = URL.search(arg)
-    if m:
-        found = from_url(m.group(0).rstrip(").,>"))
-        if found:
-            note = " ".join((arg[: m.start()] + arg[m.end():]).split())
-            return {**found, "via": "argument", **({"note": note} if note else {})}
+    # The first link we know is the ticket; every other one is a reference next to it.
+    found, asks, kept, last = [], [], [], 0
+    for m in URL.finditer(arg):
+        hit = from_url(m.group(0).rstrip(").,>"))
+        if not hit:
+            continue
+        if hit["kind"] == "ask":
+            # A link we cannot read stays in the note as plain text.
+            asks.append(hit)
+            continue
+        found.append(hit)
+        kept.append(arg[last : m.start()])
+        last = m.end()
+    if found:
+        note = " ".join((" ".join(kept) + " " + arg[last:]).split())
+        refs = found[1:]
+        return {**found[0], "via": "argument", **({"note": note} if note else {}), **({"refs": refs} if refs else {})}
+    if asks:
+        return {**asks[0], "via": "argument"}
 
     return {"kind": "text", "text": arg, "slug": slugify(arg), "via": "argument"}
 

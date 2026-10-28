@@ -37,7 +37,7 @@ mkdir -p ~/.claude/templates && cp -r templates/dev ~/.claude/templates/dev
 mkdir -p ~/.claude/scripts && cp -r scripts/dev ~/.claude/scripts/dev
 ```
 
-The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` (one fresh agent per phase) and `templates/dev/` (the decision page) copies too.
+The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` (one fresh agent per phase) and `templates/dev/` (the explore page) copies too.
 
 | Command | Description |
 |---------|-------------|
@@ -55,9 +55,9 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` (one fr
 | `/dev:finishing-development` | Archive, then land each repo by its own `.claude/finishing-development.md`; asks for the rules first when a repo has none |
 | `/dev:ticket` | Orca board ticket — `new` makes a card + worktree, `start` launches Claude on it |
 | `/dev:0-explore` | Fresh agent expands and grills a rough idea round by round (research, Claude Design canvas, HTML page) until it settles into `plan/<slug>/ticket.md` |
-| `/dev:1-design` | Fresh agent writes `plan/<slug>/plan.md`, asks you via a decision-tree HTML page |
+| `/dev:1-design` | Fresh agent writes `plan/<slug>/plan.md` with folder tree, code structure, flow and full schema, asks you in the terminal |
 | `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
-| `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, HTML page |
+| `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, fix / skip in the terminal |
 | `/dev:full-dev-cycle` | Design ⏸ → implement → review ⏸ → fix, each phase a fresh agent, stops for you after design and review |
 | `/dev:learn-conventions` | Merge learned coding conventions into `.claude/conventions.md` |
 | `/dev:code-review` | Review the diff for correctness and quality (logic, readability, reuse, efficiency) |
@@ -83,8 +83,8 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` (one fr
 ```
 claude-skills/
 ├── agents/                # Phase agents for dev: (explorer, designer, implementer, reviewer, convention-learner)
-├── templates/dev/         # Decision page HTML + build-page.py
-├── scripts/dev/           # ticket-source, orca-card, plan-status, decision-page, review-page, screen-css, chrome-devtools-unlock, localdb (+ localdb.compose.yml)
+├── templates/dev/         # Explore page HTML + build-page.py
+├── scripts/dev/           # ticket-source, orca-card, plan-status, decision-page, review-findings, screen-css, chrome-devtools-unlock, localdb (+ localdb.compose.yml)
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/

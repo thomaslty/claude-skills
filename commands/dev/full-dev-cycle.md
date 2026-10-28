@@ -14,7 +14,7 @@ You are a thin coordinator. Keep this session small: never read source code or d
 |---|---|---|
 | 1 Design | `/dev:1-design` | **stop, wait for go** |
 | 2 Implement | `/dev:2-implement` | review |
-| 3 Review | `/dev:3-review` | **stop, wait for picks** |
+| 3 Review | `/dev:3-review` | **stop, wait for your reply** |
 | 4 Fix | `dev-implementer` fixes | re-review |
 | 5 Re-review | `/dev:3-review` | **stop**, only if new T0 |
 
@@ -23,12 +23,12 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 ## Rules
 
 1. **Never start the build by yourself.** After design, always stop, even when the designer asked nothing. Show the plan, then wait. Run phase 2 only when the user says go, like "go", "implement", or "build it", in their own message.
-2. **Always stop after review.** The user's picks on the review page are the only go-ahead for fixes.
+2. **Always stop after review.** The user's reply to the findings is the only go-ahead for fixes.
 3. Between those two stops, go on without asking. Stop early only for a blocker.
 4. Fix → re-review runs at most 2 rounds. After that, show what is left and stop.
 5. Never switch branch, never commit, never push, never merge.
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
-7. Open every HTML page with `decision-page.py open <page>`, which puts it in a new Orca browser tab. Never `open <page>` yourself; the script falls back to the system browser only outside Orca.
+7. Design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer. Never build or open an HTML page for them.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.
 9. Every phase reads dev as it likes and writes to a local database only, the way "Database: read dev, write local" in `/dev:development-guideline` says. When the implementer reports `STATUS: needs-db`, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
 

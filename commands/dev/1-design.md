@@ -1,12 +1,14 @@
 ---
 name: 1-design
-description: "Design phase: a fresh dev-designer agent explores the code and writes plan/<slug>/plan.md, then shows the choices only you can make as a decision-tree HTML page. You pick, copy the JSON, paste it back, and the plan is finalized. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the worktree's linked Jira ticket. Triggers on /dev:1-design, 'design this', 'plan this ticket'. Changes no source code."
+description: "Design phase: a fresh dev-designer agent explores the code and writes plan/<slug>/plan.md, with the folder tree, code structure, execute flow and full schema, then asks the choices only you can make right here in the terminal, as markdown tables and ASCII graphs. You answer in chat and the plan is finalized. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the worktree's linked Jira ticket. Triggers on /dev:1-design, 'design this', 'plan this ticket'. Changes no source code."
 argument-hint: "[Jira URL/key | Notion URL | plan/<slug>/ticket.md | requirement text]"
 ---
 
 # 1 — Design
 
 You are the coordinator. The design work runs in a fresh `dev-designer` agent, so this session never fills up with exploration.
+
+Design talks to you in the terminal only. No HTML page, no JSON to copy: the terminal shows the full schema, the tables and the flow graphs, which a page cut short.
 
 ## Steps
 
@@ -15,21 +17,29 @@ You are the coordinator. The design work runs in a fresh `dev-designer` agent, s
 3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and spawn `dev-designer` with `ticket: plan/<slug>/ticket.md` only when it needs one.
 4. Read its report.
    - `STATUS: approved` → go to step 6.
-   - `STATUS: needs-decisions` → the page's overview is the `/show-plan` view (goal, system picture, step table, step detail) followed by the questions. Open the page (below), run `orca-card.py waiting-decisions`, then tell the user in two lines: the page path, and "pick on the page, then type `done` here (or press Copy and paste the JSON)". Stop and wait.
-   - `CANVAS: <url>` → the mockups are on that Claude Design canvas, and the page already links it. Give the user the link as one more line. The designer creates and updates the canvas itself; never publish to it from here.
-5. Get the answers (below), then spawn a NEW `dev-designer` with `ticket` and `answers: <the JSON verbatim>`. Back to step 4.
-   - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches, sends only the changed artboards to the same canvas, and rebuilds the page. Never start a full redesign for a change.
+   - `STATUS: needs-decisions` → ask in the terminal (below), run `orca-card.py waiting-decisions`, then stop and wait for the user's reply.
+   - `CANVAS: <url>` → the mockups are on that Claude Design canvas, and the plan's `Canvas:` line has it. Give the user the link as one more line. The designer creates and updates the canvas itself; never publish to it from here.
+5. The user's reply is the answer, in their own words. Spawn a NEW `dev-designer` with `ticket` and `answers: <their reply verbatim>`. Back to step 4.
+   - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches and sends only the changed artboards to the same canvas. Never start a full redesign for a change.
      - Spawn a NEW `dev-designer` with `ticket` and `change: <their words>`. Never SendMessage the last one: it still holds the whole first design, like 324k tokens on Ticket 1, so every turn is slower and after a break its cache is gone.
-     - Then reopen the page and back to step 4.
+     - Then show the parts its `CHANGED:` line names, the way step 6 shows a plan, and back to step 4.
    - Both spawns pass `effort: medium`. Only a full design in step 3 runs at the default effort.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
-7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every answers JSON from this design>`.
+7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`.
+
+## Ask in the terminal
+
+1. Show the plan the way `/show-plan` does, from `plan/<slug>/plan.md`: Goal, the System graph, the Matrix and the Detail, then its Folder structure, Code structure, Flow and Schema, as they are in the file.
+2. Then print `## Questions` exactly as the plan has it: each question with the fact it hinges on, one line per option with a real example, the comparison table and the recommendation. Never shorten it to the labels alone.
+3. End with one line, like: "Answer here, like `Q1: A, Q2: B but keep the old column`."
+
+Anything the user writes is the answer, also when it is none of the options. Never build or open an HTML page for design, and never ask for JSON.
 
 ## How much design is left
 
 A ticket with `## Explored` was explored first: `/dev:0-explore` already researched, scoped and grilled it, and its brief is `plan/<slug>/idea.md`. Read the brief yourself, never the code, then pick one of these and say which in one line, with why:
 
-- Nothing left to design → write the plan yourself, no designer and no page. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
+- Nothing left to design → write the plan yourself, no designer and no questions. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
   - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the `Research: code` graphs in `dev/<slug>/explore/decisions.json`, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
   - Set `Status: approved`, go to step 6, and skip step 7.
 - Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
@@ -51,10 +61,10 @@ Wait for all of them. Each returns one line; pass none of it on, the designer re
 - `dev/<slug>/` is everything else, and it is gitignored, one subfolder per kind:
   - `explore/` for `/dev:0-explore`: its page, `canvas/`, `research/` with the raw output it cited, and `round<n>-answers.json`
   - `attachments/` for the ticket's own files, like the CSVs on a Notion page
-  - `design/` for `decisions.json`, `decisions.html`, and `research/` with what the researchers found
+  - `design/` for `research/` with what the researchers found
   - `canvas/` for the Claude Design project
   - `evidence/` for screenshots and API answers
-  - `review/` for `<lens>.json`, `findings.json`, `review.html`, and `round<n>/` for earlier rounds
+  - `review/` for `<lens>.json`, `findings.json`, `findings.md`, and `round<n>/` for earlier rounds
   - anything else gets its own subfolder, like `dev/<slug>/samples/`
 - if the repo's `.gitignore` has no `/dev/` line, add it before you write there
 
@@ -113,20 +123,6 @@ Jira: THLAU-1          (or)  Notion: <url from the parser>  (or)  Drive: <url>
 <the parser's `note`, if any>
 ```
 
-## Open the page
-
-```bash
-python3 ~/.claude/scripts/dev/decision-page.py open dev/<slug>/design/decisions.html
-```
-
-It opens the page in Orca's browser next to this terminal, or in the default browser outside Orca, and saves the tab id next to the page.
-
-## Get the answers
-
-- The user pasted JSON → use it.
-- The user typed `done` → `python3 ~/.claude/scripts/dev/decision-page.py answers dev/<slug>/design/decisions.html`. It prints the picks and closes the tab.
-- Exit code 3 (no Orca tab, or it was closed) → ask the user to press Copy and paste the JSON.
-
 ## Scripts
 
 Do not do these by hand; each script is the only way this command does it.
@@ -135,7 +131,6 @@ Do not do these by hand; each script is the only way this command does it.
 |---|---|
 | `ticket-source.py` | parse the ticket argument |
 | `orca-card.py <phase>` | move the Orca card |
-| `decision-page.py` | open page, read picks |
 | `screen-css.py` | real CSS for the canvas |
 
 All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orca, and `--dry-run` prints what it would run.

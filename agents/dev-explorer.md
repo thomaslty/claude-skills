@@ -178,7 +178,7 @@ Follow `## Mockups` in `~/.claude/agents/dev-designer.md`, all of it, most of al
 
 The human answers on the same decision page `/dev:1-design` uses. Each question is a node, each option is one of your guesses with what happens if picked (`result`), and an option that opens another question points at it with `next`.
 
-1. Write `dev/<slug>/explore/decisions.json`. The shape, the block types and their limits are the ones in `## Decision page` of `~/.claude/agents/dev-designer.md`. Only these differ:
+1. Write `dev/<slug>/explore/decisions.json`. The shape, the block types and their limits are the ones in `## Page format` below. Only these differ:
 
 ```json
 {
@@ -280,6 +280,77 @@ today: one pipeline, hardcoded to zone 1
  "end": "Who gets hurt: the UAT zone 1 API deploy stops. No new API code reaches UAT zone 1.",
  "note": "Already happening: dev zone 1 is at 0007 since run 230205."}
 ```
+
+## Page format
+
+The shape `## Page` below builds on. The human answers on an HTML page instead of in the terminal. Each question is a node. Each option says what happens if picked (`result`), and can lead to a follow-up question (`next`). That makes a tree: picking A shows question B, picking C shows question D.
+
+1. Write `dev/<slug>/design/decisions.json`:
+
+```json
+{
+  "title": "Login with magic link — decisions",
+  "kind": "design",
+  "ticket": "plan/login-magic-link/ticket.md",
+  "plan": "plan/login-magic-link/plan.md",
+  "canvas": "https://claude.ai/artifact/<id>",
+  "summary": [
+    {"type": "text", "text": "Goal: log in from a link in an email."},
+    {"type": "graph", "text": "email form ──POST /magic──▶ magic.ts ──▶ mailer\n                              │ token\n link click ──GET /magic/:t──▶ verify ──▶ session"},
+    {"type": "table", "head": ["Step", "File"], "rows": [["token table", "migrations/0007"], ["send endpoint", "src/auth/magic.ts"]]}
+  ],
+  "roots": ["expiry"],
+  "nodes": {
+    "expiry": {
+      "title": "How long is a magic link valid?",
+      "context": [
+        {"type": "table", "head": ["Token", "Lifetime", "Where"], "rows": [["reset", "24h", "src/auth/reset.ts:41"], ["session", "7d", "src/auth/session.ts:12"]]}
+      ],
+      "options": [
+        {"id": "15m", "label": "15 minutes", "result": "safer; slow email means retry", "recommended": true},
+        {"id": "24h", "label": "24 hours, same as reset", "result": "reuses reset.ts", "next": "reuse"}
+      ]
+    },
+    "reuse": {
+      "title": "Share the reset token table?",
+      "context": [
+        {"type": "bullets", "items": ["reset_tokens: user_id, token, expires_at", "no column saying which kind of token"]}
+      ],
+      "options": [
+        {"id": "share", "label": "Share it", "result": "no migration, add a kind column"},
+        {"id": "own", "label": "New table", "result": "one migration, clean split"}
+      ]
+    }
+  }
+}
+```
+
+   - No prose. `summary` and `context` are lists of blocks:
+
+| Block | Use for | Limit |
+|---|---|---|
+| `table` | comparisons, files, values | cell ≤ 40 chars |
+| `graph` | ASCII flow or call path | none |
+| `bullets` | facts that are not a table | ≤ 5, each ≤ 100 |
+| `text` | one line only | ≤ 120 chars |
+| `heading` | a section title in `summary` | ≤ 40 chars |
+| `steps` | `/show-plan` detail, one card per step | ≤ 5 bullets, each ≤ 140 |
+
+   - `build-page.py` rejects anything over these limits and says why. Rewrite the content as a table or bullets; never split a paragraph to get under the limit.
+   - `summary` IS the `/show-plan` view of the plan, the same content as the plan's `## System`, `## Matrix` and `## Detail`. Read `~/.claude/commands/show-plan.md` and follow its Steps 3-6 and its Never list exactly, in this order, each under a `heading`:
+     1. `Goal` — one `text`: what is true when the plan is done; then one `text`: "0 of N steps done".
+     2. `System` — one `graph` per picture the plan needs (system, screen, or before/after; at most 3). Draw the system, not the schedule: real file, table and route names, labelled edges, counts outside the boxes, no durations, no step numbers, under 80 columns. Then one `text` with a real number.
+     3. `Steps` — a `table` with head `#`, `Step`, `Touches`, `Depends on`, `Effort`, `Status`. Every step, one row each, cells ≤ 30 chars, no lists inside a cell.
+     4. `Detail` — one `steps` block holding every step: `{"n": "1", "title": "Tenant check", "status": "[ ]", "effort": "30 min", "after": "1, 2", "bullets": [["Now", "..."], ["Fix", "..."], ["Real damage", "..."], ["Skip it", "..."]]}`. Labels are `Now`, `Fix`, `Real damage`, `Skip it` (or `Do`, `Verify`, `Test first` where those fit). Each bullet is one plain-English line with a real file:line, number or string; mark code with backticks and the one or two key numbers with `**`. Drop a bullet that has nothing real in it.
+     5. `Research` — a `table` of the `## Research` approaches.
+     6. No screens here: the mockups live on the canvas. Set the top-level `canvas` to its url; the page shows the link under the title.
+   - FULL means full: every step of the plan appears in both the `Steps` table and the `Detail` block. No "and 4 more".
+   - `context` carries a real file, line, or value from this codebase, so the human can decide without opening anything.
+   - Option `label` ≤ 40 chars and `result` ≤ 70. The page draws the decision map from the tree for you.
+   - When the options of a question look different on screen, draw one artboard per option, titled after the option, and name it in the option's `result`, like `"result": "one dialog; see Upload — dialog"`. The human compares them side by side on the canvas.
+   - Mark the option you would pick as `recommended`. The page preselects it.
+   - An "Other" option with a free-text box is added to every question for you.
+2. Build it: `python3 ~/.claude/templates/dev/build-page.py dev/<slug>/design/decisions.json dev/<slug>/design/decisions.html`
 
 ## Report back
 

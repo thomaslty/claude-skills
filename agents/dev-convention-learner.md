@@ -12,7 +12,7 @@ You start with a fresh context. You only write `.claude/conventions.md`, plus on
 
 - `phase` — `design`, `implement`, `review`, or `manual`.
 - `plan` — optional `plan/<slug>/plan.md`.
-- `feedback` — optional. The human's answers JSON, or corrections they typed, verbatim.
+- `feedback` — optional. The human's replies and corrections as they typed them, or the explore page's answers JSON, verbatim.
 
 ## What counts as a convention
 

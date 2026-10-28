@@ -17,16 +17,16 @@ Display this reference card when invoked. One-shot — do NOT change mode or per
 
 ## Autonomous cycle
 
-Each phase runs in a fresh agent. You only step in on the HTML decision pages.
+Each phase runs in a fresh agent. You step in on the explore page, and answer design's questions and review's findings here in the terminal.
 
 | Command | What it does |
 |---|---|
 | `/dev:ticket new <slug>` | Orca card in Todo + worktree + `plan/<slug>/ticket.md` |
 | `/dev:ticket start <slug>` | Card to In Progress, Claude runs the full cycle there |
 | `/dev:0-explore` | Grill a rough idea into a ticket: research, canvas, page per round |
-| `/dev:1-design` | Plan in `plan/<slug>/plan.md`, decision-tree page for your picks |
+| `/dev:1-design` | Plan in `plan/<slug>/plan.md`, questions asked in the terminal |
 | `/dev:2-implement` | Follow the plan until every step is verified |
-| `/dev:3-review` | 4 lenses, T0 only, fix / skip page |
+| `/dev:3-review` | 4 lenses, T0 only, fix / skip in the terminal |
 | `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix |
 
 `[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket. ⏸ = it stops and waits for you; the build never starts until you say go.

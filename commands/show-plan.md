@@ -17,6 +17,8 @@ The output is always the same four blocks, in this order:
 3. **Matrix** — every step as a row.
 4. **Detail** — point form, one block per row.
 
+Then, when the plan file has them, its structure sections and its open questions (Step 6b).
+
 ## HARD GATE — read only
 
 | Allowed | Forbidden |
@@ -276,6 +278,10 @@ Never explain background. If the reader wants the why, they will ask.
 > - Fix: its own reason code, or a threshold
 
 If you cannot fill `Real damage:` with something real, you do not understand the step — go read the code, or drop the step and say why.
+
+## Step 6b — Structure and questions
+
+A plan written by `dev-designer` can carry `## Folder structure`, `## Code structure`, `## Flow`, `## Schema` and `## Questions`. Print each one the plan has, after the detail and in that order, exactly as the file has it: the trees and graphs in their fenced blocks, every schema table with every column and its dummy rows, every question with its options, comparison table and recommendation. Never summarise them; a reader who asked for the plan wants the full schema.
 
 ## Step 7 — Close
 

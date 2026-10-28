@@ -28,7 +28,7 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 4. Fix → re-review runs at most 2 rounds. After that, show what is left and stop.
 5. Never switch branch, never commit, never push, never merge.
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
-7. Design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer. Never build or open an HTML page for them.
+7. Explore, design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer. Never build or open an HTML page for them.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.
 9. Every phase reads dev as it likes and writes to a local database only, the way "Database: read dev, write local" in `/dev:development-guideline` says. When the implementer reports `STATUS: needs-db`, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
 

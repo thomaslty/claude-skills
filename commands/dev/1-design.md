@@ -40,7 +40,7 @@ Anything the user writes is the answer, also when it is none of the options. Nev
 A ticket with `## Explored` was explored first: `/dev:0-explore` already researched, scoped and grilled it, and its brief is `plan/<slug>/idea.md`. Read the brief yourself, never the code, then pick one of these and say which in one line, with why:
 
 - Nothing left to design → write the plan yourself, no designer and no questions. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
-  - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the `Research: code` graphs in `dev/<slug>/explore/decisions.json`, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
+  - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the brief's `## Research: code` pictures, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
   - Set `Status: approved`, go to step 6, and skip step 7.
 - Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
 - Not explored → research in parallel first (below), then spawn `dev-designer` with `ticket` at the default effort, a full design.
@@ -59,7 +59,7 @@ Wait for all of them. Each returns one line; pass none of it on, the designer re
 
 - `plan/<slug>/` is markdown only, and it is committed: `ticket.md`, `plan.md`, and `idea.md` when the idea was explored first
 - `dev/<slug>/` is everything else, and it is gitignored, one subfolder per kind:
-  - `explore/` for `/dev:0-explore`: its page, `canvas/`, `research/` with the raw output it cited, and `round<n>-answers.json`
+  - `explore/` for `/dev:0-explore`: `canvas/`, `research/` with the raw output it cited, and `round<n>-answers.md`
   - `attachments/` for the ticket's own files, like the CSVs on a Notion page
   - `design/` for `research/` with what the researchers found
   - `canvas/` for the Claude Design project

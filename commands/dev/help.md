@@ -54,6 +54,7 @@ Each review tier defaults to the **diff/staged/PR**. Pass `--repo` (or a path) t
 | Command | What it does |
 |---|---|
 | `/dev:create-readme` | Write or rewrite a README: 9 sections, ≤5 benefit-framed features, config table |
+| `/dev:create-readme-tldr` | A ~30-line README in Thomas's style: Overview, Quick start, Configuration |
 
 ## Debt
 

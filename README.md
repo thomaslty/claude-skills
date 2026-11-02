@@ -65,6 +65,7 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 | `/dev:full-review` | Comprehensive review across every lens in one synthesized report |
 | `/dev:investigate` | Answer an open question — cited evidence, ranked hypotheses, refute the leader (read-only) |
 | `/dev:create-readme` | Write or rewrite a README — 9 sections, at most 5 benefit-framed features, config table with a Required column |
+| `/dev:create-readme-tldr` | A ~30-line README in Thomas's style — Overview, Quick start, Configuration, nothing else |
 | `/dev:debt` | Harvest `ponytail:` / TODO / FIXME / HACK markers into a debt ledger |
 
 #### `hfv:` — Hypothesis-Fix-Verify debugging
@@ -109,6 +110,7 @@ claude-skills/
     │   ├── full-review.md
     │   ├── investigate.md
     │   ├── create-readme.md
+    │   ├── create-readme-tldr.md
     │   ├── debt.md
     │   └── help.md
     └── hfv/

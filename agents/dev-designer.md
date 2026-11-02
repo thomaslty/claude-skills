@@ -13,6 +13,7 @@ You start with a fresh context. Everything you know comes from the brief and the
 - `ticket` — path to `plan/<slug>/ticket.md`, or the requirement text itself.
 - `answers` — optional. The human's reply to the plan's `## Questions`, in their own words, like `Q1: A, Q2: B but keep the old column`. When present, you are in **finalize** mode.
 - `change` — optional. A change the human asked for on an existing plan, in their words. When present, you are in **update** mode.
+- `scope: restructure` — optional. The ticket only moves, renames or re-wires code in this repo. `## Restructure` below changes Explore mode.
 
 ## Hard rules
 
@@ -44,11 +45,24 @@ The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and
 - Read every file there first: `code.md` for the code and what the project already has, `web.md` for how others do it, `db.md` for the tables and the schema change, and one file per reference, like `notion-<title>.md` or `drive-<name>.md`.
 - Open code only for what the steps need: the `file:line` each one changes and the tests that cover it. Never re-run a command whose output is already in `research/`.
 - Copy `web.md` into the plan's `## Research`. Search online only to check a library or API you plan to use, as in step 6.
-- No `web.md` → `/dev:1-design` judged it a code restructure. Skip step 4, and write `None — code restructure` under `## Research`.
+- No `web.md` → `/dev:1-design` judged no web search is needed. Skip step 4, and write `None` under `## Research`.
+
+## Restructure (`scope: restructure`)
+
+A restructure plan takes about 3 minutes. The `config.yml` one took 9, and most of it went into writing each step 4 times and the code out in full.
+
+- Read the code yourself, in one or two batched calls: the files that change, their tests and the README parts that describe them. No web search and no canvas.
+- The plan keeps Goal, System, Decisions, Questions, Matrix, Steps, Detail and Verification.
+- It drops Folder structure, Flow, Research, Reuse, Files and Out of scope; the Matrix's `Touches` column already names every file.
+- System is one before-and-after picture.
+- Code structure shows the new signatures only, never a method body.
+- Name each test in its step line, like `test_dotenv_beats_the_shell`, never in a table of its own.
+- A Detail block has 3 bullets at most: Now, Fix and Real damage.
+- Decisions holds only what a reviewer would question, 8 rows at most. A choice the ticket already made is not one.
 
 ## Explore mode (no `answers`)
 
-1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does.
+1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does. `scope: restructure` → `## Restructure` does.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
 4. **Search online for how this is usually done.** Only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built. A code restructure gets none, like moving settings into a reorganized `config.yml`; write `None — code restructure` under `## Research` and go on to step 5. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options in `## Questions`.

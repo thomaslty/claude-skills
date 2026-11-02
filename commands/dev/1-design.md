@@ -43,6 +43,10 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
   - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the brief's `## Research: code` pictures, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
   - Set `Status: approved`, go to step 6, and skip step 7.
 - Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
+- Not explored, and a code restructure → no research agents. Spawn `dev-designer` with `ticket`, `scope: restructure` and `effort: medium`; it reads the code itself.
+  - A restructure stays inside this repo's code, config and docs: it moves, renames or re-wires how the code reads something, with no new screen, no table change and no outside API, like reading a reorganized `config.yml` and `.env`
+  - a new library can still come in, as a question, like PyYAML to read that `config.yml`
+  - Why: on that ticket a code researcher took 4 of 18 minutes, then the designer re-read the same 6 files, and a full design wrote a 464-line plan in 9 more
 - Not explored → research in parallel first (below), then spawn `dev-designer` with `ticket` at the default effort, a full design.
 
 ## Research in parallel
@@ -51,7 +55,6 @@ A full design gets its research done before the designer starts, so the designer
 
 - `topic: code`, always
 - `topic: web` only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built
-  - a code restructure gets no web research, like moving settings into a reorganized `config.yml` and `.env`, renaming a module, or splitting one file into three
 - `topic: db` only when the ticket reads or changes tables, queries or data, like a new column or syncing one more table
 - the ticket has a `Notion:` or `Drive:` line → `topic: notion` or `topic: drive`, with `ref: <that url>`
 - one more per Notion, Drive or Jira link under the ticket's `## Related`, with its kind as `topic` and the link as `ref`, like `topic: drive, ref: https://docs.google.com/document/d/1AbC/edit`

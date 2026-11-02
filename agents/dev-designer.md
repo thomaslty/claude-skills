@@ -44,13 +44,14 @@ The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and
 - Read every file there first: `code.md` for the code and what the project already has, `web.md` for how others do it, `db.md` for the tables and the schema change, and one file per reference, like `notion-<title>.md` or `drive-<name>.md`.
 - Open code only for what the steps need: the `file:line` each one changes and the tests that cover it. Never re-run a command whose output is already in `research/`.
 - Copy `web.md` into the plan's `## Research`. Search online only to check a library or API you plan to use, as in step 6.
+- No `web.md` → `/dev:1-design` judged it a code restructure. Skip step 4, and write `None — code restructure` under `## Research`.
 
 ## Explore mode (no `answers`)
 
 1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
-4. **Search online for how this is usually done.** Always, every ticket that was not explored first. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options in `## Questions`.
+4. **Search online for how this is usually done.** Only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built. A code restructure gets none, like moving settings into a reorganized `config.yml`; write `None — code restructure` under `## Research` and go on to step 5. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options in `## Questions`.
 5. **Reuse first.** Prefer, in this order:
    - what the project already has (step 3)
    - a feature of a library already installed

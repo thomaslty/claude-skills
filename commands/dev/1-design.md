@@ -47,9 +47,12 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
 
 ## Research in parallel
 
-A full design gets its research done before the designer starts, so the designer reads files instead of searching one thing after another. Spawn these `dev-researcher` agents in ONE message, each with `brief: plan/<slug>/ticket.md` and `out: dev/<slug>/design/research/`:
+A full design gets its research done before the designer starts, so the designer reads files instead of searching one thing after another. Pick the topics from what the ticket touches, and say which in one line, with why. Then spawn those `dev-researcher` agents in ONE message, each with `brief: plan/<slug>/ticket.md` and `out: dev/<slug>/design/research/`:
 
-- `topic: code`, `topic: web` and `topic: db`, always
+- `topic: code`, always
+- `topic: web` only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built
+  - a code restructure gets no web research, like moving settings into a reorganized `config.yml` and `.env`, renaming a module, or splitting one file into three
+- `topic: db` only when the ticket reads or changes tables, queries or data, like a new column or syncing one more table
 - the ticket has a `Notion:` or `Drive:` line → `topic: notion` or `topic: drive`, with `ref: <that url>`
 - one more per Notion, Drive or Jira link under the ticket's `## Related`, with its kind as `topic` and the link as `ref`, like `topic: drive, ref: https://docs.google.com/document/d/1AbC/edit`
 

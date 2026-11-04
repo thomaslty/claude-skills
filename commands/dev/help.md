@@ -13,7 +13,8 @@ Display this reference card when invoked. One-shot — do NOT change mode or per
 |---|---|
 | `/dev:development-guideline` | The methodology: propose → apply → archive, TDD, VDD, visual confirm |
 | `/dev:parallel-development` | Multiple proposals at once: worktree + sub-agent each, main session integrates |
-| `/dev:finishing-development` | Archive, then land each repo by its `.claude/finishing-development.md` (asks first when missing) |
+| `/dev:finishing-development` | Archive, then land each repo by its `.claude/finishing-development.md` (asks first when missing), then `/dev:cleanup` |
+| `/dev:cleanup` | Stop what this session left running: scripts, servers, ports, containers |
 
 ## Autonomous cycle
 

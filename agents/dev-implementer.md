@@ -12,11 +12,17 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
 - `plan` — path to `plan/<slug>/plan.md` with `Status: approved`.
 - `fixes` — optional. Review findings the human chose to fix, as JSON. When present, you do only those.
 - `db` — optional. What the human picked when there was no local database, like `clone .env.dev1 --prefix OMEGA`.
-- `only: change` — optional. Write the OpenSpec change and get the local database ready, then report. Do no step.
-- `repo` — optional. One worktree from the plan's `## Repos`. Other implementers build the other repos at the same time, so:
-  - do only the steps whose `Touches` is in this worktree, and leave the plan's `## Verification` to the implementer that runs after you all
+- `only: change` — optional. The setup run before a split build. Write the OpenSpec change, get the local database ready, do the plan's `setup` steps, and put the plan in the split shape (below). With `fixes`, only add each fix as a step and a task, with its `Repo`. Then report. Do no other step.
+- `repo` — optional. One repo by the name the Matrix's `Repo` column uses, like `backend`; its worktree is in the plan's `## Repos`. Other implementers build the other repos at the same time, so:
+  - do only the unticked steps whose `Repo` is this repo, and leave the `join` steps and `## Verification` to the join implementer
+  - never wait for another repo. A step that calls an endpoint the other repo is still building codes against the plan's `## Contract`
+  - frontend: in the headless run, answer each `## Contract` endpoint with Playwright's `page.route()` and the contract's JSON. Never put a mock in the app code
+  - backend: give each `## Contract` endpoint a test that asserts the contract's JSON
+  - rebuild and restart only your own repo's image, by the repo's `CLAUDE.md`, like `make up BUILD=frontend DETACH=1` in Omega.Next.AIO. Never stop the stack, never rebuild the other repo's image
+  - builds take turns, coding does not: run every image build through `lockf -k -t 1800 /tmp/docker-build.lock <command>`. Two builds at once run colima out of memory
   - drive the browser with headless Playwright only, since chrome-devtools has one browser for all of you
-  - tick and append with one Edit each time, never by rewriting the whole plan or `tasks.md`
+  - tick and append with one Edit each time, never by rewriting the whole plan or `tasks.md`. An Edit that fails because the file changed → read it again and redo the Edit
+- `only: join` — optional. Runs after every repo implementer is done. Rebuild every image and restart the whole stack, then do the `join` steps against the real backend, with no `page.route()` answers, then the plan's `## Verification`.
 
 ## Hard rules
 
@@ -51,9 +57,21 @@ Before step 1, follow "Database: read dev, write local" in the guideline. You ru
 - Its step 4 → do not ask. Stop before step 1 and report `STATUS: needs-db`, with the database and the env file that names it in `DB:`, like `aisql-omega1-dev from .env.dev1 (OMEGA_)`.
 - The brief has `db:` → do what the human picked, with the `localdb.py` command the guideline gives for it.
 
+## Split shape (`only: change`)
+
+A plan with steps in 2 or more repos is built by one implementer per repo at the same time. Before you report, put the plan in that shape, in one Edit:
+
+1. Every Matrix row has a `Repo` cell: the name of its `## Repos` row, like `root`, `backend` or `frontend`. No `Repo` column → add it from the files each step's Detail names.
+2. A step every repo needs before it starts, like the worktree's own ports → `setup`. You do these steps now.
+3. A step that needs two repos' code running together, like stack up, e2e or the Verification walk → `join`.
+4. A frontend step that waits on a backend step only for its endpoint → write that endpoint into `## Contract`, in the format `~/.claude/agents/dev-designer.md` gives, and take the backend step out of its `Depends on`.
+5. Any other `Depends on` that still crosses repos → that step, and each step that depends on it, becomes `join`.
+
+Never leave the plan in a shape that needs one implementer for every repo.
+
 ## Loop
 
-Run `openspec instructions apply --change <slug> --json` and read its `contextFiles` first. Then, for each unticked step in `## Steps`, in order:
+Run `openspec instructions apply --change <slug> --json` and read its `contextFiles` first. Then, for each unticked step in `## Steps` that is yours, in order. With `repo` that is the steps whose `Repo` is this repo; with `only: join`, the `join` steps; otherwise every step:
 
 1. Read the step's block under the plan's `## Detail`, its row in `## Matrix`, and the requirement and design part of the change it touches. Then do the step. Backend: failing test first, see it fail, then the code. Frontend: build it, render it, look at it.
 2. Run the step's `verify:` check. Paste the real result.
@@ -61,11 +79,14 @@ Run `openspec instructions apply --change <slug> --json` and read its `contextFi
 
 A step that changes what a spec says → update that spec in the change too, so the change matches what was built.
 
-When every step is ticked, `openspec instructions apply --change <slug> --json` must say `all_done`. Then do the plan's `## Verification` in the real running app, the way the guideline's visual-confirmation mandate says. Save screenshots under `dev/<slug>/evidence/`.
+With `repo`, stop when your repo's steps are ticked. Otherwise, when every step is ticked, `openspec instructions apply --change <slug> --json` must say `all_done`. Then do the plan's `## Verification` in the real running app, the way the guideline's visual-confirmation mandate says. Save screenshots under `dev/<slug>/evidence/`.
 
 ## Fix mode (`fixes` given)
 
-Add each fix as a new step under `## Steps`, labelled `review:` and given the finding's id, and as a new task in the change's `tasks.md`. Then run the same loop on those steps only. Re-run `## Verification` at the end.
+Add each fix as a new step under `## Steps`, labelled `review:` and given the finding's id, with its Matrix row and its `Repo`, taken from the folder the finding's `where` starts with, like `backend/…` → `backend`. Add it as a new task in the change's `tasks.md` too. Then run the same loop on those steps only. Re-run `## Verification` at the end.
+
+- With `only: change` → add the steps and tasks, then report.
+- With `repo` → the steps are already there. Do the unticked `review:` steps whose `Repo` is this repo, and leave `## Verification` to the join implementer.
 
 ## Report back
 

@@ -22,6 +22,10 @@ You start with a fresh context. Everything you know comes from the brief and the
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. The implementer codes your plan under it, so the plan has a failing test before each backend change, a screen built and looked at for each frontend one, a `## Verification` seen in the running app, and every write on a local database. You can read dev yourself, like a SELECT to check a column, and you never write to any database.
 - Read `.claude/conventions.md` and `CLAUDE.md` first if they exist. The plan must follow them.
 - The ticket's `## Repos` lists every repo this work touches, each with its worktree. Explore and plan in all of them, read each one's own `CLAUDE.md`, copy the table into the plan's `## Repos`, and start every Files path with the worktree it lives in. An artboard for another repo uses that repo's real UI code and CSS.
+- Plan for a parallel build. Each repo is built by its own implementer at the same time, so:
+  - every Matrix row names its repo in `Repo`, the name of its `## Repos` row, like `backend` or `frontend`
+  - a step every repo needs before it starts, like the worktree's own ports, is `setup`. A step that needs two repos' code running together, like stack up, e2e or the Verification walk, is `join`
+  - `Depends on` names only steps in the same repo, or `setup` steps. A frontend step never waits for a backend step: it codes against `## Contract`
 - Batch your reads: independent greps, seds and cats go in one Bash call or in parallel calls in one message, never one per turn. On Ticket 1 the tools took 3 of 41 minutes and the turns between them took the rest.
 - Edit a file in one pass: all the changes to the plan in one script or one Edit, not one call per row.
 - No HTML page and no JSON for the human. The coordinator prints the plan in the terminal, so everything the human needs to see goes into `plan.md` as markdown tables and plain fenced ASCII graphs.
@@ -130,6 +134,9 @@ The execute flow from the entry point to what gets saved, as an ASCII graph in a
 ## Schema
 (when the plan adds or changes a table) See "Schema" below.
 
+## Contract
+(when the frontend calls an endpoint the plan adds or changes) See "Contract" below.
+
 ## Research
 | Approach | Used by / source | Fits here? |
 |---|---|---|
@@ -154,9 +161,9 @@ New libraries: none (or each one, with the reason the installed ones cannot do i
 |---|---|
 
 ## Matrix
-| # | Step | Touches | Depends on | Effort |
-|---|---|---|---|---|
-| 1 | <Swap zone 1 secret names> | <azure-pipeline-ev-entity.yml> | — | <15 min> |
+| # | Step | Repo | Touches | Depends on | Effort |
+|---|---|---|---|---|---|
+| 1 | <Swap zone 1 secret names> | <root> | <azure-pipeline-ev-entity.yml> | — | <15 min> |
 
 ## Steps
 - [ ] 1. <one bounded action> — verify: `<command or check>`
@@ -182,7 +189,7 @@ What this plan deliberately does not do.
 
 Each step is one action a fresh agent can do with only this file: name the real file and say what changes. Order the steps so the failing test comes before the code it covers.
 
-`## System`, `## Matrix` and `## Detail` are the `/show-plan` view written down, by Steps 4 to 6 of `~/.claude/commands/show-plan.md`, so the implementer codes from the same picture you showed the human. `## Matrix` has no Status column; the tick in `## Steps` is the status. Keep the three in step with `## Steps`: one matrix row and one detail block per step.
+`## System`, `## Matrix` and `## Detail` are the `/show-plan` view written down, by Steps 4 to 6 of `~/.claude/commands/show-plan.md`, so the implementer codes from the same picture you showed the human. `## Matrix` has no Status column; the tick in `## Steps` is the status. Its `Repo` column is what `/dev:2-implement` splits the build on. Keep the three in step with `## Steps`: one matrix row and one detail block per step.
 
 `## Folder structure`, `## Code structure`, `## Flow` and `## Schema` are what the human reads first when a feature is new. Leave one out only when the plan has nothing for it, like no `## Schema` when no table changes.
 
@@ -202,6 +209,20 @@ When the plan adds or changes a table, show the whole structure, never a summary
 4. The entity snippet for each new table, in the project's own style.
 
 Dummy values look real: real ids from the dev database where you read them, real codes, real dates. Never `foo` or `test1`.
+
+## Contract
+
+The frontend and the backend build at the same time, so the frontend codes against this, never against the backend's code. One block per endpoint the plan adds or changes, with real values like the Schema's dummy rows:
+
+```markdown
+### GET /api/poc/token/wallets/{walletId}/history
+- Query: `from=2026-10-01&to=2026-11-04`
+- 200: `{"walletId": 7, "rows": [{"day": "2026-11-03", "balance": "1.25", "priceCad": "4890.12"}]}`
+- 404: `{"detail": "wallet 7 not found"}`
+```
+
+- The backend's test asserts this JSON, and the frontend's headless run answers with it through Playwright's `page.route()` until the join.
+- A change to an endpoint edits its block here first.
 
 ## Questions
 

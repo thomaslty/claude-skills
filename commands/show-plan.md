@@ -212,7 +212,7 @@ Column rules:
 - **Effort** — concrete units: `5 min`, `2 h`, `half a day`. Never "some work".
 - **Status** — one of `done`, `now`, `next`, `blocked`.
 
-Add columns when the plan needs them (`Owner`, `Risk`, `Verify`). Never widen a cell to fit more.
+Add columns when the plan needs them (`Repo`, `Owner`, `Risk`, `Verify`). Never widen a cell to fit more.
 
 ## Step 6 — Detail, point form
 

@@ -67,6 +67,7 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 | `/dev:investigate` | Answer an open question — cited evidence, ranked hypotheses, refute the leader (read-only) |
 | `/dev:create-readme` | Write or rewrite a README — 9 sections, at most 5 benefit-framed features, config table with a Required column |
 | `/dev:create-readme-tldr` | A ~30-line README in Thomas's style — Overview, Quick start, Configuration, nothing else |
+| `/dev:create-menu` | `make menu` for a repo — a Makefile whose `make help` lists every command, and a Textual menu that runs those lines with steps, a progress bar and a safe Stop |
 | `/dev:debt` | Harvest `ponytail:` / TODO / FIXME / HACK markers into a debt ledger |
 
 #### `hfv:` — Hypothesis-Fix-Verify debugging
@@ -84,7 +85,7 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 ```
 claude-skills/
 ├── agents/                # Phase agents for dev: (explorer, designer, implementer, reviewer, convention-learner)
-├── scripts/dev/           # ticket-source, orca-card, plan-status, review-findings, screen-css, chrome-devtools-unlock, session-cleanup, localdb (+ localdb.compose.yml)
+├── scripts/dev/           # ticket-source, orca-card, plan-status, review-findings, screen-css, chrome-devtools-unlock, session-cleanup, localdb (+ localdb.compose.yml), menu/ (the make menu template)
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/
@@ -113,6 +114,7 @@ claude-skills/
     │   ├── investigate.md
     │   ├── create-readme.md
     │   ├── create-readme-tldr.md
+    │   ├── create-menu.md
     │   ├── debt.md
     │   └── help.md
     └── hfv/

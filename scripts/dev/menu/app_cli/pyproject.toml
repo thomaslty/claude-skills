@@ -1,0 +1,36 @@
+# app_cli — this repo's make menu (`make menu`). Every pin is exact.
+#
+# After changing anything here:
+#     uv lock
+
+[project]
+name = "app-cli"
+version = "0.1.0"
+description = "Run the root Makefile's commands from a terminal menu"
+requires-python = ">=3.12"
+dependencies = [
+    # the menu, app_cli/menu.py
+    "textual==8.2.8",
+]
+
+# make menu runs `uv run --project app_cli app-menu`.
+[project.scripts]
+app-menu = "app_cli.menu:main"
+
+# `uv sync` installs this group by default; `uv run --directory app_cli pytest` runs tests/.
+[dependency-groups]
+dev = [
+    "pytest==8.4.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# The package is app_cli/app_cli/, so the module root is this folder.
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app_cli"
+module-root = ""

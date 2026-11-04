@@ -72,6 +72,8 @@ A restructure plan takes about 3 minutes. The `config.yml` one took 9, and most 
    - a new library, only when neither can do it
 
    A new library always goes in `## Questions` as its own question. Its context says what it adds, why the installed libraries cannot do it, its size and licence, and its last release date.
+
+   A part that shows on many pages or screens, like the header, footer or nav, stays one component with one code. When the mockups or the design screens draw it differently per page, which one is the standard goes in `## Questions`, never a copy per page in the Decisions table, like the "Header and footer: copy each screen" that gave About another header than Home.
 6. Check any library or API you plan to use against real docs (context7 or web search), not memory.
 7. Sort every open question into one of two buckets:
    - **You can answer it** from the code, the conventions, or a sensible default. Answer it and write the answer into the plan's Decisions table with the reason.

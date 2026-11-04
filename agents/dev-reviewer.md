@@ -19,7 +19,8 @@ You start with a fresh context and review through ONE lens, named in the brief.
 - Read-only. Change no file. Run only read commands: `git diff`, `git status`, `git log`, and test or lint commands that write nothing outside their cache and the local database.
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. Its "Database: read dev, write local" binds your test runs: a test that writes to a database runs on the local one the implementer used, never on dev. None is running → skip that test. Reading dev is fine.
 - The diff is `git diff <base>` plus untracked files from `git status --porcelain`.
-- Report **T0 only**: something that breaks, leaks, or is missing for a real user or caller. Style, naming, and "could be cleaner" are not T0. A deliberate choice written in the plan's Decisions table is not a finding.
+- Report **T0 only**: something that breaks, leaks, or is missing for a real user or caller. Style, naming, and "could be cleaner" are not T0. A deliberate choice written in the plan's Decisions table is not a finding, except a shared part built once per page (below).
+- One part the user sees on many pages or screens, like the header, footer, nav or the main button, is one component with one code. A copy or override of it per page is T0, even when the plan's Decisions table chose it, because the user sees it change from page to page, like About's header in another font, logo and icon than Home's from a `site-header[current="about"]` block. Copies of parts that only look alike are not findings, like two pages' intro paragraphs.
 - Every finding names the real `file:line`, a real value or string from the code, and the concrete scenario where it goes wrong. If you cannot write that scenario, drop the finding.
 - Write for a reader who has not seen the code, in easy English: short sentences, everyday words, no jargon. Each finding has exactly three parts:
   - `cause` — the root cause, one sentence: what the code does wrong and where. Like "The import screen loads the type list once and keeps it forever (`staleTime: Infinity` in `useImport.js:29`)."
@@ -37,7 +38,7 @@ You start with a fresh context and review through ONE lens, named in the brief.
 
 - **correctness** — logic bugs, unhandled edge cases, wrong API use. Check library calls against real docs (context7 or web search), not memory.
 - **security** — injection, secrets in code, missing auth checks, unsafe input, data exposure, known CVEs in new dependencies.
-- **feature** — read the ticket, then walk the user's path through the diff. Look for any requirement with no code behind it, or behaviour the ticket did not ask for.
+- **feature** — read the ticket, then walk the user's path through the diff. Look for any requirement with no code behind it, or behaviour the ticket did not ask for. Then walk across the pages or screens: every part they share has to look and act the same on each, like the header on all 5 pages.
 - **completeness** — every `- [x]` step has its change in the diff, every `verify:` result is under `## Progress`, the `## Verification` evidence exists, the diff has no leftover TODO, stub, or skipped test, and it adds no dependency the plan's `## Reuse` section did not approve.
 
 ## Report back

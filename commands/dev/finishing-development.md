@@ -1,13 +1,13 @@
 ---
 name: finishing-development
-description: "Use when development work is complete and ready to land — archives any active OpenSpec change, then commits in small batches, pushes and merges each repo the work touched, following that repo's own landing rules in <repo>/.claude/finishing-development.md. Never merges until the user says yes three times, in three separate questions. When a repo has no rules file yet, asks the user for its rules first and never lands that repo without them. Takes one optional argument: a target branch, used only to prefill the questions."
+description: "Use when development work is complete and ready to land — archives any active OpenSpec change, then commits in small batches, pushes and merges each repo the work touched, following that repo's own landing rules in <repo>/.claude/finishing-development.md, then stops what the session left running (dev:cleanup). Never merges until the user says yes three times, in three separate questions. When a repo has no rules file yet, asks the user for its rules first and never lands that repo without them. Takes one optional argument: a target branch, used only to prefill the questions."
 ---
 
 # Finishing Development
 
 ## Overview
 
-The closing ritual for a development session: **archive → land each repo by its own rules**. Run it only once all work is implemented and visually confirmed (see `dev:development-guideline`).
+The closing ritual for a development session: **archive → land each repo by its own rules → clean up what the session left running**. Run it only once all work is implemented and visually confirmed (see `dev:development-guideline`).
 
 Every repo lands differently: one merges into `dev`, one opens a PR, a wrapper repo only bumps gitlinks. So each repo keeps its landing rules in its own `.claude/finishing-development.md`, and this command follows that file and nothing else.
 
@@ -114,6 +114,14 @@ git fetch origin "$TARGET" && git merge-base --is-ancestor HEAD "origin/$TARGET"
 - The push is rejected when `origin/<target>` moved since the check. Never force it: fetch, check again, and start again at Ask 1.
 - The user said no → skip the merge and the "After landing" steps, and tell them what was committed and pushed.
 
+## Step 4 — Clean up what this session left running
+
+Run it after every repo is done, whether or not it merged, since the "Before landing" checks may still need the servers or the database.
+
+- Follow `~/.claude/commands/dev/cleanup.md` from its step 1: list, show the table, ask once, stop what the user picked
+- Nothing from this session is still running → one line, move on
+- You cannot ask, like when running as a sub-agent → show the table only, stop nothing, and tell the user to run `/dev:cleanup`
+
 ## Default rules
 
 Offered as the suggested answer in Step 1, never applied without the user's yes.
@@ -136,6 +144,7 @@ Offered as the suggested answer in Step 1, never applied without the user's yes.
 ## Cross-References
 
 - Archiving → `opsx:archive`, `openspec-archive-change`
+- Stopping what the session left running → `dev:cleanup`
 - Methodology this closes out → `dev:development-guideline`
 - Parallel worktree integration that precedes this → `dev:parallel-development`
 - End-to-end orchestration → `dev:full-dev-cycle`

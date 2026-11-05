@@ -2,7 +2,7 @@
 """Hand one brief to qwen through omp, wait for it, then check what it changed.
 
 Usage:
-  offload.py start   <run-dir> [--max-time 60m] [--wait 540 | --until-done]
+  offload.py start   <run-dir> [--max-time 2h] [--wait 540 | --until-done]
   offload.py wait    <run-dir> [--wait 540 | --until-done]
 
 An agent runs `start <run-dir> --until-done` as a background shell and ends its
@@ -17,8 +17,8 @@ brief.md there first. qwen writes report.md there.
 
 start    queues the run and returns, then waits like `wait`. One qwen run
          goes at a time on this machine: the others wait in a queue in
-         ~/.cache/dev-offload/. The snapshot is taken and --max-time starts
-         only when the run's turn comes. The output goes to omp.log in the
+         ~/.cache/dev-offload/. The snapshot is taken when the run's turn
+         comes. A run has no time limit unless --max-time is given. The output goes to omp.log in the
          run folder.
 wait     waits up to --wait seconds. Prints STATUS: queued (with how many
          runs are ahead), running, or the exit code, qwen's report, and the
@@ -160,7 +160,7 @@ def cmd_start(a):
     (run / "queued").write_text(ticket.name + "\n")
     log = open(run / "launch.log", "w")
     p = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve()), "_run", str(run),
-                          "--max-time", a.max_time, "--ticket", str(ticket)],
+                          *(["--max-time", a.max_time] if a.max_time else []), "--ticket", str(ticket)],
                          stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
     (run / "pid").write_text(str(p.pid))
     print(f"QUEUED: background pid {p.pid}, {ahead(ticket)} run(s) ahead, output in {run.relative_to(root)}/omp.log")
@@ -217,7 +217,9 @@ def cmd_run(a):
             (run / "started").write_text(f"{time.time()}\n")
             rel = run.relative_to(root)
             message = f"Your brief is attached. Do it, then write your report to {rel}/report.md."
-            omp = [*NO_CREDENTIALS, "omp", "-p", "--thinking", "xhigh", "--no-title", "--max-time", a.max_time,
+            # No --max-time unless asked: a 60-minute cap cut step 39 off with 2 of 7 files to go.
+            limit = ["--max-time", a.max_time] if a.max_time else []
+            omp = [*NO_CREDENTIALS, "omp", "-p", "--thinking", "xhigh", "--no-title", *limit,
                    "--config", str(OVERLAY), "--append-system-prompt", str(RULES),
                    message, f"@{run / 'brief.md'}"]
             (run / "cmd.sh").write_text("#!/bin/bash\n" + f"cd {shlex.quote(str(root))}\n" + shlex.join(omp) + "\n")
@@ -458,7 +460,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("run")
-    s.add_argument("--max-time", default="60m")
+    s.add_argument("--max-time", default=None, help="stop the run after this long, like 2h; none by default")
     s.add_argument("--wait", type=int, default=540)
     s.add_argument("--until-done", action="store_true",
                    help="wait with no time limit, for a background shell that ends only when the run does")
@@ -475,7 +477,7 @@ def main():
     sub.add_parser("queue")
     b = sub.add_parser("_run")  # the background half of start; not for direct use
     b.add_argument("run")
-    b.add_argument("--max-time", default="60m")
+    b.add_argument("--max-time", default=None)
     b.add_argument("--ticket", required=True)
     a = ap.parse_args()
     {"start": cmd_start, "wait": cmd_wait, "check": cmd_check, "diff": cmd_diff,

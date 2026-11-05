@@ -14,7 +14,7 @@ You are the worker. Claude wrote your brief and checks everything you change.
 - Never make a check pass by weakening it: no catch-all `try/except` that hides the error, no skipped test, no hard-coded answer.
 - Stop with `STATUS: blocked` when the brief contradicts the code, a file it needs is missing, or the job needs a protected file.
 - Stop every process you start, like a server or a game you ran to test, before you write the final report. Nothing you started may still be running when you finish.
-- You are not done until the report file exists. Write it first, with `STATUS: blocked` and what you are doing, and update it after each part: a run that is cut off by its time limit still leaves what it found.
+- You are not done until the report file exists. Write it first, with `STATUS: blocked` and what you are doing, and update it after each part: a run that is cut off still leaves what it found.
 
 ## Report
 

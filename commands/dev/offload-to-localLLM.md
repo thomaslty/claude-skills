@@ -55,7 +55,7 @@ One local model serves every run on the machine, so `offload.py` runs at most 4 
 - Briefs that share no file go at once: start each one as soon as it is written, up to 4. A brief that needs another brief's code waits for that run's result.
 - A run has no time limit: it ends when qwen is done. On 2026-11-05 a 60-minute cap cut step 39 off with 5 of its 7 files written. qwen decodes about 41 tokens a second, mostly thinking at `xhigh`, so a big write brief can take more than an hour. `--timeout <duration>` exists for a limit; leave it off.
 - The snapshot is taken when the run gets its slot, not when you start it.
-- Never start helper agents to feed qwen faster. One agent can start 4 runs itself, and each helper sends its whole conversation again on every turn.
+- Never start an agent to feed qwen. You can start all 4 runs yourself, and each agent sends its whole conversation again on every turn.
 - Wait in the background: `offload.py start <run-dir>` as a background shell plus the 5-minute `watch`, then end your turn. Each turn sends your whole conversation again. The watch wakes you 12 times an hour at most. Never watch `omp.log` or file changes instead: that wakes you on every line, like the helper that reached 1,089 turns on 2026-11-05.
 - A run belongs to no shell, so it goes on when your waiting shell is killed. Told it was killed → start `offload.py wait <run-dir>` as a background shell and end your turn again. On 2026-11-05 Claude Code killed an implementer's waiting shell and, before this fix, the qwen run under it died 9 edits in.
 7. Check the run (below).
@@ -124,13 +124,22 @@ The deep pass is due when the repo has no `.claude/risky.md`, or when the diff h
 
 ## With another /dev skill
 
-Typed next to another `/dev` skill, this skill runs nothing itself. That skill runs as usual, with one line in the plan: `Offload: local` under `Ticket:`. `/dev:2-implement` adds it; `/dev:full-dev-cycle` runs 2-implement, so it gets it too. Every agent that reads the plan then works the way the sections below say. Delete the line to build that plan on Claude again.
+Typed next to another `/dev` skill, that skill runs as usual, with one line in the plan: `Offload: local` under `Ticket:`. `/dev:2-implement` adds it; `/dev:full-dev-cycle` runs 2-implement, so it gets it too. Delete the line to build that plan on Claude again.
 
-The session you talk to still shows the 5-minute progress. When it spawns the implementers, or starts the review pre-pass, it starts `offload.py watch` with no run folder under Monitor, the same way as in "Alone". With no run folder it follows every run going on this machine, each block titled `<repo>/<run>`, so another session's run shows up too, and it prints `QWEN BUSY` for every run that waits for a slot. Start it again every 30 minutes until its agents are done. The implementers never watch: what they say never reaches the user, and each wake sends their whole conversation again.
+A plan with `Offload: local` is built and fixed by the session you talk to, never by a `dev-implementer` agent. An agent that only hands code to qwen adds its own startup, its own reads of the plan and the code, and its own turns, and qwen already runs 4 at once. Thomas, 2026-11-05: "I don't like the idea to use subagent to just handing off a task to local model, it does not make sense". So in the build and in every fix round:
 
-### Each step, inside dev-implementer
+- read `~/.claude/agents/dev-implementer.md` and follow it yourself, with `plan`, plus `fixes` in a fix round
+- you build every repo in the plan: the `setup` steps, then each repo's steps, then the `join` steps and `## Verification`
+- start the briefs of different repos at once, up to 4, when they share no file
+- never stop with `STATUS: partial` and write no `## Report back`: tell the user what now works, the way `/dev:2-implement` step 6 says
+- `STATUS: needs-db` or a blocker → ask or tell the user straight away, the way `/dev:2-implement` step 4 says
+- start no agent to build or to feed qwen. On 2026-11-05 one backend build started 9 helpers to feed qwen faster. Every first-round run timed out, the helpers wrote most of the code themselves, and they used about 2.36 billion cached-token reads in one night
 
-Before the first step: add up the code the plan adds for your repo, from its `## Code structure` and `## Files`. Under about 300 lines → build it on Claude as if there were no `Offload:` line, and say so in your report: `OFFLOAD: skipped, about <n> lines`. On the first full-cycle test, 390 lines of code took 25.2 minutes with qwen and 14.7 without.
+When you start the first run, or the review pre-pass, start `offload.py watch` with no run folder under Monitor, the same way as in "Alone". With no run folder it follows every run going on this machine, each block titled `<repo>/<run>`, so another session's run shows up too, and it prints `QWEN BUSY` for every run that waits for a slot. Start it again every 30 minutes until your runs are done.
+
+### Each step
+
+Before the first step: add up the code the plan adds, from its `## Code structure` and `## Files`. Under about 300 lines → build it yourself with no qwen, as if there were no `Offload:` line, and tell the user `OFFLOAD: skipped, about <n> lines`. On the first full-cycle test, 390 lines of code took 25.2 minutes with qwen and 14.7 without.
 
 1. Read the step as usual.
 2. The step only touches what is Claude's (tests, specs, docs, migrations, the frontend look) → do it yourself.
@@ -139,8 +148,6 @@ Before the first step: add up the code the plan adds for your repo, from its `##
    - Why: on the first full-cycle test the briefs came to 26.8 KB, more than the 15.6 KB of code qwen wrote from them, and Claude spent more tokens than building it alone.
 4. `offload.py start <run-dir>` as a background shell, end your turn, and check the run as above when you are woken.
 5. Run the step's `verify:` yourself and paste it. Tick the step yourself. qwen never ticks.
-
-One implementer per repo feeds qwen, up to 4 briefs at once when they share no file, and starts no helper agents. On 2026-11-05 one backend build started 9 helpers to feed qwen faster. Every first-round run timed out, the helpers wrote most of the code themselves, and they used about 2.36 billion cached-token reads in one night.
 
 ### Browser pre-check
 
@@ -177,4 +184,5 @@ Round 1 of `/dev:3-review` only. It runs at the same time as Claude's reviewers,
 | Always `--thinking xhigh` | never downgrade qwen |
 | Claude reads every diff | a clean report proves nothing |
 | One re-brief, then Claude codes | each round costs Claude tokens |
+| No agent just to feed qwen | the session you talk to does it |
 | Only Claude ticks the plan | `plan-status.py` counts checked steps |

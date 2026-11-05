@@ -6,7 +6,7 @@ argument-hint: "[plan/<slug>/plan.md | requirement text]"
 
 # 2 — Implement
 
-You are the coordinator. The build runs in fresh `dev-implementer` agents. Two repos never build one after the other: a plan that spans repos, like frontend and backend, gets one implementer per repo at the same time.
+You are the coordinator. The build runs in fresh `dev-implementer` agents. Two repos never build one after the other: a plan that spans repos, like frontend and backend, gets one implementer per repo at the same time. A plan with `Offload: local` is the one exception: you build it yourself, in this session.
 
 ## Steps
 
@@ -17,7 +17,8 @@ You are the coordinator. The build runs in fresh `dev-implementer` agents. Two r
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py implement`
 3. Spawn the build:
    - The plan has no `Base:` line → add `Base: <git rev-parse HEAD>` under its `Ticket:` line first, or `Base: 4b825dc642cb6eb9a060e54bf8d69288fbee4904` (git's empty tree) in a repo with no commit yet. The implementer commits as it builds, so `/dev:3-review` diffs from here: on a branch with no remote, "the merge base with `master`" is the last build commit and the diff comes out empty.
-   - `/dev:offload-to-localLLM` was asked for in this session and the plan has no `Offload:` line → add `Offload: local` under its `Ticket:` line first. Every implementer then hands the code to qwen, the way `~/.claude/commands/dev/offload-to-localLLM.md` says.
+   - `/dev:offload-to-localLLM` was asked for in this session and the plan has no `Offload:` line → add `Offload: local` under its `Ticket:` line first.
+   - The plan has `Offload: local` → spawn no implementer and skip the rest of this step. You build every repo yourself, the way `## With another /dev skill` in `~/.claude/commands/dev/offload-to-localLLM.md` says. Then check your own work with the first two checks of step 4, and go on to step 5.
    - The plan's `## Repos` lists 2 or more repos that change → one implementer per repo (below). Always, with no check first.
    - One repo → spawn `dev-implementer` with `plan: <path>`.
    - Either way, the Matrix's `Risk` column decides the effort and may split a repo's build in two, the way `## Risk split` below says.
@@ -27,7 +28,7 @@ You are the coordinator. The build runs in fresh `dev-implementer` agents. Two r
    - `done: true` → step 5.
    - `done: false` and the agent did not report a blocker → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report `left`. In a split build this is per repo, as below. A `STATUS: partial` at the end of a phase is not a round: it is the implementer keeping its conversation short, so start the next one.
    - An implementer stopped by a usage limit or an error → start a NEW one rather than resuming it. A resumed agent sends its whole old conversation again on every turn.
-   - Never let an implementer start helpers of its own unless `dev-implementer.md` allows it. It writes the reason under `## Progress` first. A plan with `Offload: local` gets one implementer per repo and no helpers at all.
+   - Never let an implementer start helpers of its own unless `dev-implementer.md` allows it. It writes the reason under `## Progress` first.
    - `STATUS: blocked` → tell the user the blocker in one sentence, run `orca-card.py blocked`, and stop.
    - `STATUS: needs-db` → there is no local database for `DB`. Ask the user with AskUserQuestion what to do, never pick for them:
      - clone it from dev (Recommended): `localdb.py clone` reads dev once, then everything runs on the copy
@@ -72,6 +73,7 @@ Review fixes split the same way. Each finding's `where` starts with its repo, li
 
 - Findings in 2 or more repos → setup with `plan`, `fixes` and `only: change`, which adds each fix as a step with its `Repo`. Then one `dev-implementer` per repo with `plan`, `fixes` and `repo`, in ONE message. Then join with `only: join`.
 - Findings in one repo → one `dev-implementer` with `plan` and `fixes`.
+- The plan has `Offload: local` → no implementer: you fix them yourself in this session, in every repo, the way `## With another /dev skill` in `offload-to-localLLM.md` says.
 - Effort: high, and xhigh when a finding is in code a fix round already changed, the way `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md` says.
 
 ## Local database

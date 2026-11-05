@@ -6,7 +6,7 @@ argument-hint: "[Jira URL/key | Notion URL | plan/<slug>/ticket.md | requirement
 
 # Full Dev Cycle
 
-You are a thin coordinator. Keep this session small: never read source code or diffs yourself, and pass only paths and the agents' reports between phases. Every phase runs in fresh agents, so one phase's context never leaks into the next.
+You are a thin coordinator. Keep this session small: never read source code or diffs yourself, and pass only paths and the agents' reports between phases. Every phase runs in fresh agents, so one phase's context never leaks into the next. A plan with `Offload: local` is the one exception: this session builds it and fixes it, the way `/dev:2-implement` says, and reads the code and diffs for that.
 
 ## The cycle
 
@@ -32,7 +32,7 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
 7. Explore, design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer. Never build or open an HTML page for them.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.
 9. Every phase reads dev as it likes and writes to a local database only, the way "Database: read dev, write local" in `/dev:development-guideline` says. When the implementer reports `STATUS: needs-db`, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
-10. Two repos never build one after the other. The build and every fix round run one implementer per repo at the same time, the way `/dev:2-implement` says.
+10. Two repos never build one after the other. The build and every fix round run one implementer per repo at the same time, the way `/dev:2-implement` says. With `Offload: local`, this session builds every repo, with their qwen runs going at once.
 11. Every agent you start gets its effort from `## Effort` below.
 
 ## Effort

@@ -41,7 +41,7 @@ python3 ~/.claude/scripts/dev/review-findings.py --plan plan/<slug>/plan.md dev/
     - Append a `## Review` section to the plan listing each finding id, its choice, and the comment.
     - If any finding is to be fixed, or the reply asks for something else:
       - snapshot each repo the fixes touch, so the re-review can read only what they change: `python3 ~/.claude/scripts/dev/changes.py snapshot dev/<slug>/review/fix-<round>/<repo> --root <that repo's worktree>`
-      - run `orca-card.py fixing`, then fix them the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. Findings in 2 or more repos get one `dev-implementer` per repo at the same time. The reply is the go-ahead for these fixes.
+      - run `orca-card.py fixing`, then fix them the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. Findings in 2 or more repos get one `dev-implementer` per repo at the same time. With `Offload: local` there is no implementer: you fix them yourself. The reply is the go-ahead for these fixes.
       - then the re-review (below).
 
 ## Re-review

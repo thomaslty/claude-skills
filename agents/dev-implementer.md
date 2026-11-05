@@ -91,7 +91,7 @@ Never leave the plan in a shape that needs one implementer for every repo.
 Run `openspec instructions apply --change <slug> --json` and read its `contextFiles` first, except with `Size: small`. Then, for each unticked step in `## Steps` that is yours, in order. With `repo` that is the steps whose `Repo` is this repo; with `steps`, those steps; with `only: join`, the `join` steps; otherwise every step:
 
 1. Read the step's block under the plan's `## Detail`, its row in `## Matrix`, and the requirement and design part of the change it touches. Then do the step. Backend: failing test first, see it fail, then the code. Frontend: build it, render it, look at it.
-   - The plan has `Offload: local` → you still write the tests and the frontend look, and qwen writes the code. Do it the way "Each step, inside dev-implementer" in `~/.claude/commands/dev/offload-to-localLLM.md` says.
+   - The plan has `Offload: local` → you still write the tests and the frontend look, and qwen writes the code. Do it the way "Each step" in `~/.claude/commands/dev/offload-to-localLLM.md` says.
 2. Run the step's `verify:` check. Paste the real result.
 3. Tick it in the plan, in one Edit: `- [x]` on the step and one line under `## Progress`, `- step N: <what changed> — <evidence>`. `tasks.md` is not ticked per step. On the offload test, ticking both files took 25 of the builder's 108 tool calls.
 

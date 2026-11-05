@@ -1,6 +1,6 @@
 # Token burn: instruction reorg
 
-Status: approved
+Status: done except step 19 (waits for each branch to merge `dev`)
 Agreed: 2026-11-04, in the token-burn session (`token_burn/`)
 
 ## Goal
@@ -104,24 +104,24 @@ the dev suite (this repo and ~/.claude)
 | 19 | Re-file worktree bullets | Omega root | 3 feature branches | 14 | 20 min each |
 
 ## Steps
-- [ ] 1. Move the 11 unused taste-pack folders out of `~/.agents/skills` into `~/.claude-token-burn-backup-2026-11-04/`, drop their lock entries — verify: `ls ~/.agents/skills` lists 6
-- [ ] 2. `token_burn/`: fix the LINK and removal numbers, drop the ruled-out levers — verify: read
-- [ ] 3. `dev-convention-learner.md`: write `.claude/rules/<area>.md` with `paths`, no import, ~8k cap, file a leftover `conventions.md` — verify: read
-- [ ] 4. `learn-conventions.md` and `help.md`: say `.claude/rules/` — verify: `grep -rn 'conventions.md' commands/` finds only the leftover note
-- [ ] 5. implementer, designer, explorer, researcher: read conventions only for other repos — verify: read
-- [ ] 6. `dev-implementer.md`: `disallowedTools: Artifact`, read the design from `dev/<slug>/canvas/project/` — verify: read
-- [ ] 7. the general Omega workflow bullets go to the dev-suite phase that owns them — verify: each one found in its agent
-- [ ] 8. the same edits in `~/.claude/agents/` and `~/.claude/commands/dev/` — verify: `grep` finds each change in both copies
-- [ ] 9. `backend/docs/claude/db-apply.md` and `incidents.md` — verify: read
-- [ ] 10. `backend/CLAUDE.md`: intro without the repeats, one line per coding-style link — verify: `wc -c`
-- [ ] 11. `backend/shared/repository/ev/CLAUDE.md`: Standalone zone, Reads, Writes, Flow Studio — verify: gone from `backend/CLAUDE.md`
-- [ ] 12. `backend/test/CLAUDE.md`: Test taxonomy and Testing procedure — verify: gone from `backend/CLAUDE.md`
-- [ ] 13. `.claude/rules/`: safety, workflow, backend, backend-data, backend-deploy, frontend — verify: all 91 bullets accounted for
-- [ ] 14. delete `.claude/conventions.md` and `CLAUDE.md:173` — verify: `grep -rn conventions.md CLAUDE.md` finds nothing
-- [ ] 15. root `CLAUDE.md`: docker only, root on `dev`, no repeats — verify: `wc -c` near 7k
-- [ ] 16. root repo points at the new backend commit — verify: `git ls-tree HEAD backend`
-- [ ] 17. `MEMORY.md`: one short line per memory, status moved into the memory file — verify: `wc -c` near 8k, 120 lines still
-- [ ] 18. a fresh Omega session's first request, split the same way — verify: instruction files ~32k chars
+- [x] 1. Move the 11 unused taste-pack folders out of `~/.agents/skills` into `~/.claude-token-burn-backup-2026-11-04/`, drop their lock entries — verify: `ls ~/.agents/skills` lists 6
+- [x] 2. `token_burn/`: fix the LINK and removal numbers, drop the ruled-out levers — verify: read
+- [x] 3. `dev-convention-learner.md`: write `.claude/rules/<area>.md` with `paths`, no import, ~8k cap, file a leftover `conventions.md` — verify: read
+- [x] 4. `learn-conventions.md` and `help.md`: say `.claude/rules/` — verify: `grep -rn 'conventions.md' commands/` finds only the leftover note
+- [x] 5. implementer, designer, explorer, researcher: read conventions only for other repos — verify: read
+- [x] 6. `dev-implementer.md`: `disallowedTools: Artifact`, read the design from `dev/<slug>/canvas/project/` — verify: read
+- [x] 7. the general Omega workflow bullets go to the dev-suite phase that owns them — verify: each one found in its agent
+- [x] 8. the same edits in `~/.claude/agents/` and `~/.claude/commands/dev/` — verify: `grep` finds each change in both copies
+- [x] 9. `backend/docs/claude/db-apply.md` and `incidents.md` — verify: read
+- [x] 10. `backend/CLAUDE.md`: intro without the repeats, one line per coding-style link — verify: `wc -c`
+- [x] 11. `backend/shared/repository/ev/CLAUDE.md`: Standalone zone, Reads, Writes, Flow Studio — verify: gone from `backend/CLAUDE.md`
+- [x] 12. `backend/test/CLAUDE.md`: Test taxonomy and Testing procedure — verify: gone from `backend/CLAUDE.md`
+- [x] 13. `.claude/rules/`: safety, workflow, backend, backend-data, backend-deploy, frontend — verify: all 91 bullets accounted for
+- [x] 14. delete `.claude/conventions.md` and `CLAUDE.md:173` — verify: `grep -rn conventions.md CLAUDE.md` finds nothing
+- [x] 15. root `CLAUDE.md`: docker only, root on `dev`, no repeats — verify: `wc -c` near 7k
+- [x] 16. root repo points at the new backend commit — verify: `git ls-tree HEAD backend`
+- [x] 17. `MEMORY.md`: one short line per memory, status moved into the memory file — verify: `wc -c` near 8k, 120 lines still
+- [x] 18. a fresh Omega session's first request, split the same way — verify: instruction files ~32k chars
 - [ ] 19. each feature worktree: extra bullets filed when it merges `dev` — verify: no `conventions.md` left on the branch
 
 ## Detail
@@ -222,6 +222,19 @@ the dev suite (this repo and ~/.claude)
 ## Not filed in AIO
 Bullets from `conventions.md` about other repos, kept here word for word for Omega.Sync and Omega.Entity:
 
-(filled in by step 13)
+- An OM Robot "<X> Management" sidebar group splits into two menu items: the catalogue page (add, update, delete) and a "Relationship" page for the per-tenant ticks, like Module Management in `OM.Robot/frontend/components/app-sidebar.jsx:68` and Import Management (`/import-management/import-type`, `/import-management/relation`) — seen 2, human, 2026-10-21
+- An `ev` table, even a tool's own bookkeeping table, is made by an Omega.Entity alembic revision, never by a `.sql` file in the tool's repo; a repo that needs the guard gets a `CLAUDE.md` line and one check script that both a Claude `PreToolUse` hook and `.githooks/pre-commit` run, like `ev.sync_status` from Omega.Entity `0008` replacing Omega.Sync `scripts/sql/ev_sync_status.sql` — seen 1, human, 2026-10-26
+- Omega.Sync code lives in `omega_sync/`: commands in `cli/`, shared code in `services/`, settings in one `config.py`; table lists go in `tables/` and tests in `tests/`, and each command is a `[project.scripts]` entry run as `uv run <name>`, like the layout in step 23 of `plan/zone5-standalone-setup/plan.md` — seen 1, human, 2026-10-26
+- A table set Omega.Sync reads is a committed `tables/<name>.txt`: a comment header saying where it came from, then one table per line, parents first, like `dev/zone5-standalone-setup/sync/db_sync_syncdb_tables.txt` and Omega.Sync `scripts/db_sync_core_tables.txt` — seen 3, human, 2026-10-26 (was: `scripts/db_sync_<name>_tables.txt`; Thomas moved the lists to `tables/`)
+- A script's file name says what it does, verb first, and its `[project.scripts]` command matches it, like `configure_fabric_mirror_table_setting.py` / `uv run configure-fabric-mirror-table-setting`, which writes the Fabric mirror's table list; a name that only names a thing, like Jacob's `fabric_mirror_tables.py`, gets renamed — seen 1, human, 2026-10-26
 
 ## Progress
+- step 1: 11 folders moved to `~/.claude-token-burn-backup-2026-11-04/agents-skills/`, 11 lock entries dropped — `ls ~/.agents/skills` lists 6
+- step 2: LINK hook 1.3k, removal ~1.3k per call, ruled-out levers listed — claude-skills `f8132a1`
+- steps 3–8: learner writes `.claude/rules/`, 4 agents stop the repeat read, implementer has no Artifact and commits as it builds, 11 workflow bullets placed in the designer, reviewer and `full-dev-cycle.md`; 8 more were already covered (`1-design.md:11`, `dev-designer.md:201`, `3-review.md:30`, …) — claude-skills `53d7b7d`; the same edits are in `~/.claude`, made in place because another session has newer edits there
+- step 7: nothing new went to `~/.claude/CLAUDE.md`: easy English and terminal only were already there or in the suite
+- steps 9–12: backend `271c19ca2` (docs/claude) and `702c22c64`; `backend/CLAUDE.md` 47,348 → 12,837 chars, standalone notes in `shared/repository/ev/CLAUDE.md`, Test taxonomy was already in `test/CLAUDE.md`
+- steps 13–15: root `d33654f`, `42d73dc`, `22f7076`; 67 bullets in 7 rules files, 19 to the suite, 5 kept below; root `CLAUDE.md` 16,599 → 7,010 chars
+- step 16: root `f080f1e`, backend gitlink at `702c22c6`
+- step 17: `MEMORY.md` 20,871 → 12,486 chars, 120 lines, longest 154; 2 memory files got their old index text; backup in `~/.claude-token-burn-backup-2026-11-04/omega-memory/`
+- step 18: fresh session `71bd8c2a` in the main checkout: 35,216 chars of instruction files on the first request (was 85k–103k), no `conventions.md`; its Explore subagent loads none

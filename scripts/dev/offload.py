@@ -4,6 +4,7 @@
 Usage:
   offload.py start   <run-dir> [--timeout <duration>]
   offload.py wait    <run-dir>
+  offload.py watch   [<run-dir>] [--every 5m]
   offload.py queue
   offload.py check   <run-dir>
   offload.py diff    <run-dir>
@@ -20,6 +21,13 @@ start    queues the run and waits until it ends. One qwen run goes at a time
          it is woken once, when the run ends, and pays nothing while qwen works.
 wait     waits until a started run ends, then prints the exit code, qwen's
          report and the omp session to resume. For picking a run back up.
+watch    prints how the run is going every 5 minutes, and once right away:
+         elapsed, ETA from the brief's files qwen has written, context window,
+         prefill and decode speed, and the server's KV cache and load. Each
+         block is also a row in progress.md in the run folder. It exits when
+         the run ends. With no <run-dir> it follows whichever run is going on
+         this machine and never exits. Claude runs it under Monitor, so each
+         block wakes it to pass on to you.
 queue    the run that is running and the runs waiting, on this machine.
 check    the free checks: same branch, HEAD, stash and remote ref of that
          branch in the repo and its submodules, no protected file touched, and whether Claude's
@@ -45,6 +53,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.request
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -149,7 +158,8 @@ def cmd_start(a):
         text = gi.read_text() if gi.exists() else ""
         gi.write_text(text + ("" if text.endswith("\n") or not text else "\n") + "/dev/\n")
         print("added /dev/ to .gitignore")
-    for stale in ("exit_code", "report.md", "omp.log", "session.txt", "queued", "started", "snapshot.json"):
+    for stale in ("exit_code", "report.md", "omp.log", "session.txt", "queued", "started", "snapshot.json",
+                  "progress.md"):
         (run / stale).unlink(missing_ok=True)
     (QUEUE / "queue").mkdir(parents=True, exist_ok=True)
     ticket = QUEUE / "queue" / f"{time.time_ns()}-{os.getpid()}"
@@ -296,6 +306,11 @@ def omp_written(run, root, snap):
     session = pathlib.Path(saved.read_text().strip()) if saved.exists() else omp_session(root, snap["time"])
     if not session or not session.exists():
         return None
+    return session_writes(session, root)
+
+
+def session_writes(session, root):
+    """Every file an omp session edited or wrote, relative to `root`."""
     files = set()
 
     def walk(x):
@@ -462,6 +477,262 @@ def cmd_restore(a):
     print(f"{n} file(s) put back")
 
 
+def seconds(text):
+    """A duration like 5m, 30s, 1h or 300 as seconds."""
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)([smh]?)", text.strip())
+    if not m:
+        sys.exit(f"--every takes a duration like 5m, not {text}")
+    return float(m.group(1)) * {"": 1, "s": 1, "m": 60, "h": 3600}[m.group(2)]
+
+
+def clock(secs):
+    """Seconds as 1h 05m, 25m 10s or 40s."""
+    secs = int(max(secs, 0))
+    h, m, s = secs // 3600, secs % 3600 // 60, secs % 60
+    return f"{h}h {m:02d}m" if h else f"{m}m {s:02d}s" if m else f"{s}s"
+
+
+def kilo(n):
+    """A token count as 950, 12.3k, 500k or 1.2M."""
+    for size, unit in ((1e6, "M"), (1e3, "k")):
+        if n >= size:
+            return f"{n / size:.1f}".removesuffix(".0") + unit
+    return f"{n:.0f}"
+
+
+def turns(session):
+    """qwen's finished model turns in an omp session, its model like vllm/qwen3.8-flash-next, and its last message."""
+    rows, model, last = [], None, None
+    with open(session, errors="replace") as fh:
+        for line in fh:
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue  # omp may be halfway through writing the last line
+            if d.get("type") == "model_change":
+                model = d.get("model")
+            m = d.get("message")
+            if d.get("type") != "message" or not isinstance(m, dict):
+                continue
+            content = m.get("content") if isinstance(m.get("content"), list) else []
+            calls = [c.get("name") for c in content if isinstance(c, dict) and c.get("type") == "toolCall"]
+            last = (m.get("role"), ts(d.get("timestamp")), calls)
+            u = m.get("usage")
+            if m.get("role") != "assistant" or not isinstance(u, dict):
+                continue
+            ttft = (m.get("ttft") or 0) / 1000
+            prompt = (m.get("contextSnapshot") or {}).get("promptTokens") or u.get("input", 0) + u.get("cacheRead", 0)
+            rows.append({"end": ts(d.get("timestamp")), "new": u.get("input", 0), "cached": u.get("cacheRead", 0),
+                         "out": u.get("output", 0), "think": u.get("reasoningTokens") or 0, "ttft": ttft,
+                         "decode": max((m.get("duration") or 0) / 1000 - ttft, 0),
+                         "context": prompt + u.get("output", 0)})
+    return rows, model, last
+
+
+def speeds(rows, span):
+    """The speed table's cells for some turns: prefill, decode, tokens out, thinking, cache hit, turns, model busy."""
+    if not rows:
+        return ["-"] * 7
+    new, cached, out, think = (sum(r[f] for r in rows) for f in ("new", "cached", "out", "think"))
+    ttft, decode = sum(r["ttft"] for r in rows), sum(r["decode"] for r in rows)
+    return [f"{new / ttft:,.0f}" if ttft else "-", f"{out / decode:.1f}" if decode else "-", kilo(out),
+            f"{think / out:.0%}" if out else "-", f"{cached / (new + cached):.0%}" if new + cached else "-",
+            str(len(rows)), f"{min((ttft + decode) / span, 1):.0%}" if span else "-"]
+
+
+def http(url, key):
+    """The body at `url`, or None when it does not answer in 5 seconds."""
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"} if key else {})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.read().decode(errors="replace")
+    except Exception:
+        return None
+
+
+def model_server(model):
+    """omp's base URL, API key, model name and context window for `model`, like vllm/qwen3.8-flash-next."""
+    provider, _, name = (model or "").partition("/")
+    try:
+        import yaml
+        conf = yaml.safe_load((pathlib.Path.home() / ".omp/agent/models.yml").read_text())["providers"][provider]
+    except Exception:
+        return None
+    key = conf.get("apiKey")
+    key = os.environ.get(key, key) if key else None  # omp takes an env var name or the key itself
+    base = (conf.get("baseUrl") or "").rstrip("/")
+    try:
+        window = next(d.get("max_model_len") for d in json.loads(http(base + "/models", key))["data"] if d["id"] == name)
+    except Exception:
+        window = None
+    return {"base": base, "key": key, "name": name, "window": window}
+
+
+def vllm(srv):
+    """vLLM's gauges and counters for the model, summed over its engines; {} when /metrics does not answer."""
+    text = http(re.sub(r"/v1$", "", srv["base"]) + "/metrics", srv["key"]) or ""
+    out = {}
+    for line in text.splitlines():
+        m = re.match(r"(vllm:\w+)\{([^}]*)\} (\S+)$", line)
+        if m and f'model_name="{srv["name"]}"' in m.group(2) and "le=" not in m.group(2):
+            out[m.group(1)] = out.get(m.group(1), 0) + float(m.group(3))
+    if out:
+        out["t"] = time.time()
+    return out
+
+
+def run_times(run):
+    """When the run started and its snapshot, or (None, None) before its turn has come."""
+    snap_file = run / "snapshot.json"
+    if not snap_file.exists():
+        return None, None
+    snap = json.loads(snap_file.read_text())
+    started = run / "started"
+    return (float(started.read_text()) if started.exists() else snap["time"]), snap
+
+
+def progress(run, every, cache):
+    """One progress block for a run, as markdown, and the row it adds to progress.md."""
+    name = f"{run.parent.parent.name}/{run.name}"
+    now = time.time()
+    started, snap = run_times(run)
+    if started is None:
+        queued = run / "queued"
+        ticket = QUEUE / "queue" / queued.read_text().strip() if queued.exists() else None
+        if ticket:
+            return f"qwen {name} · queued {clock(now - int(ticket.name.split('-')[0]) / 1e9)}, " \
+                   f"{ahead(ticket)} run(s) ahead", None
+        return f"qwen {name} · waiting for its turn", None
+    elapsed = now - started
+    root = pathlib.Path(snap["root"])
+    session = omp_session(root, snap["time"])
+    if not session:
+        return f"qwen {name} · running {clock(elapsed)} · omp is starting, no model turn yet", None
+    rows, model, last = turns(session)
+
+    allowed = brief_files(run)
+    written = session_writes(session, root)
+    done = sum(1 for f in allowed if any(matches(w, [f]) for w in written))
+    if not allowed:
+        eta = "no ETA, the brief lists no files"
+    elif not done:
+        eta = f"files 0/{len(allowed)} · ETA after the first file"
+    elif done < len(allowed):
+        eta = f"files {done}/{len(allowed)} · ETA ~{clock(elapsed / done * (len(allowed) - done))}"
+    else:
+        eta = f"files {done}/{len(allowed)} · all written, qwen is checking its work"
+
+    if model not in cache:
+        cache[model] = model_server(model)
+    srv = cache[model]
+    live = ""
+    a = vllm(srv) if srv else {}
+    if a:
+        time.sleep(3)
+        b = vllm(srv)
+        if b:
+            rate = (b["vllm:generation_tokens_total"] - a["vllm:generation_tokens_total"]) / (b["t"] - a["t"])
+            live = f", {rate:.0f} tok/s now"
+            a = b
+    role, at, calls = last or (None, started, [])
+    if role == "assistant" and calls:
+        doing = f"running {', '.join(calls)} for {clock(now - at)}"
+    elif role == "assistant":
+        doing = "done, omp is closing"
+    else:
+        doing = f"model turn {len(rows) + 1} for {clock(now - at)}{live}"
+
+    state = []
+    if rows:
+        ctx = rows[-1]["context"]
+        window = srv and srv["window"]
+        state.append(f"context {kilo(ctx)} / {kilo(window)} ({ctx / window:.0%})" if window else f"context {kilo(ctx)}")
+    if a:
+        state.append(f"KV cache {a.get('vllm:kv_cache_usage_perc', 0):.0%}")
+        state.append(f"server {a.get('vllm:num_requests_running', 0):.0f} running, "
+                     f"{a.get('vllm:num_requests_waiting', 0):.0f} waiting")
+    elif srv:
+        state.append("server metrics not answering")
+    queued = len(waiting())
+    if queued:
+        state.append(f"{queued} run(s) queued after it")
+
+    recent = speeds([r for r in rows if r["end"] >= now - every], every)
+    whole = speeds(rows, elapsed)
+    span = clock(every).replace("m 00s", "m")
+    labels = ["prefill tok/s", "decode tok/s", "tokens out", "thinking", "cache hit", "model turns", "model busy"]
+    lines = [f"qwen {name} · running {clock(elapsed)} · {eta}", f"now: {doing}", " · ".join(state), "",
+             f"| speed | last {span} | whole run |", "|---|---|---|"]
+    lines += [f"| {label} | {x} | {y} |" for label, x, y in zip(labels, recent, whole)]
+    ctx_cell = kilo(rows[-1]["context"]) if rows else "-"
+    row = (f"| {time.strftime('%H:%M')} | {clock(elapsed)} | {done}/{len(allowed)} | {ctx_cell} | "
+           f"{whole[0]} | {whole[1]} | {recent[1]} | {whole[2]} | {whole[5]} |")
+    return "\n".join(lines), row
+
+
+def log_progress(run, row):
+    """Add one row to progress.md in the run folder, with the header the first time."""
+    f = run / "progress.md"
+    head = "" if f.exists() else ("| time | elapsed | files | context | prefill tok/s | decode tok/s | "
+                                  "decode last tick | tokens out | turns |\n|---|---|---|---|---|---|---|---|---|\n")
+    with open(f, "a") as fh:
+        fh.write(head + row + "\n")
+
+
+def ended(run):
+    """The last line for a run that is over."""
+    name = f"{run.parent.parent.name}/{run.name}"
+    code_file = run / "exit_code"
+    for _ in range(10):  # the run lets go of the lock a moment before it writes exit_code
+        if code_file.exists() or not alive(run):
+            break
+        time.sleep(1)
+    if not code_file.exists():
+        return f"qwen {name} stopped without an exit code; its background process is gone"
+    started, snap = run_times(run)
+    took = f" after {clock(code_file.stat().st_mtime - started)}" if started else ""
+    log = run / "progress.md"
+    if log.exists() and log.is_relative_to(snap["root"]):
+        log = log.relative_to(snap["root"])
+    tail = f" · every tick is in {log}" if (run / "progress.md").exists() else ""
+    return f"qwen {name} ended: exit {code_file.read_text().strip()}{took}{tail}"
+
+
+def cmd_watch(a):
+    """Print a progress block every --every until the run ends; with no run, follow whichever run is going."""
+    every = seconds(a.every)
+    cache, cur, next_at, shown = {}, None, 0, 0
+    fixed = pathlib.Path(a.run).resolve() if a.run else None
+    while True:
+        if fixed:
+            now_run = None if (fixed / "exit_code").exists() or not alive(fixed) else fixed
+        else:
+            r = running_run()
+            now_run = pathlib.Path(r) if r else None
+        if cur and now_run != cur:
+            print(ended(cur), flush=True)
+            cur = None
+        if fixed and now_run is None:
+            if not shown:
+                print(ended(fixed), flush=True)
+            return
+        if now_run and now_run != cur:
+            cur, next_at, shown = now_run, 0, 0
+        if cur and time.time() >= next_at:
+            try:
+                block, row = progress(cur, every, cache)
+                if row:
+                    log_progress(cur, row)
+            except Exception as e:  # one bad read must not end the watch
+                block, row = f"qwen {cur.name}: could not read its progress this time ({e})", True
+            # Before omp's first turn, look again in 15 seconds, but say so only once per tick.
+            if row or time.time() - shown >= every:
+                print(block + "\n", flush=True)
+                shown = time.time()
+            next_at = time.time() + (every if row else 15)
+        time.sleep(5)
+
+
 def main():
     """Run one of the commands."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -470,6 +741,9 @@ def main():
     s.add_argument("run")
     s.add_argument("--timeout", default=None, help="stop the run after this long, like 2h; no limit by default")
     sub.add_parser("wait").add_argument("run")
+    w = sub.add_parser("watch")
+    w.add_argument("run", nargs="?", help="the run to watch; none follows whichever run is going on this machine")
+    w.add_argument("--every", default="5m", help="how often to print, like 5m or 30s")
     for name in ("check", "diff"):
         sub.add_parser(name).add_argument("run")
     r = sub.add_parser("restore")
@@ -481,7 +755,7 @@ def main():
     b.add_argument("--timeout", default=None)
     b.add_argument("--ticket", required=True)
     a = ap.parse_args()
-    {"start": cmd_start, "wait": cmd_wait, "check": cmd_check, "diff": cmd_diff,
+    {"start": cmd_start, "wait": cmd_wait, "watch": cmd_watch, "check": cmd_check, "diff": cmd_diff,
      "restore": cmd_restore, "queue": cmd_queue, "_run": cmd_run}[a.cmd](a)
 
 

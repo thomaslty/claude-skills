@@ -43,6 +43,9 @@ Frontend look means the markup and classes: Claude writes them, and leaves the h
 4. The task changes behaviour → write the tests first, in the repo's own test folder, and see them fail. Name the interface they need, like `next_head(head, direction)`, in the brief. qwen never writes or edits a test.
 5. Write `brief.md` in the run folder (below).
 6. Run `offload.py start <run-dir>` as a background shell (`run_in_background`) and end your turn. It queues the run, runs omp when its turn comes, with the output in `omp.log` in the run folder, and exits only when the run does. You are woken once, then. Its output has the exit code, qwen's report, and the `omp --resume` line that picks that qwen session back up, which it also saves in `session.txt`. Pass that line on to the user.
+   - In the same turn, start `offload.py watch <run-dir>` with the Monitor tool, `timeout_ms` 1800000, description like `qwen solo progress`. It prints a block right away and every 5 minutes: elapsed, ETA, files written, context window, prefill and decode speed, and the server's KV cache and load. The user asked for it, because a run in the background looks like it never moves.
+   - Paste each block to the user as it is, with no comment, and end your turn again.
+   - The monitor stops after 30 minutes → start it again while the run goes. It ends by itself when the run does, and leaves every block as a row in `progress.md` in the run folder.
 
 ## One run at a time
 
@@ -52,7 +55,7 @@ One local model serves every run on the machine, so `offload.py` runs them one a
 - A run has no time limit: it ends when qwen is done. On 2026-11-05 a 60-minute cap cut step 39 off with 5 of its 7 files written. qwen decodes about 41 tokens a second, mostly thinking at `xhigh`, so a big write brief can take more than an hour. `--timeout <duration>` exists for a limit; leave it off.
 - The snapshot is taken when the run's turn comes, not when you start it.
 - Never start helper agents to feed qwen faster. They only wait in the same queue, and each one sends its whole conversation again on every turn.
-- Wait in the background, woken once: `offload.py start <run-dir>` as a background shell, then end your turn. Each turn sends your whole conversation again. A 40-minute run waited in the foreground in 9-minute slices costs about 5 turns; a monitor that wakes you on every start, finish or file change costs more, like the helper that reached 1,089 turns on 2026-11-05.
+- Wait in the background: `offload.py start <run-dir>` as a background shell plus the 5-minute `watch`, then end your turn. Each turn sends your whole conversation again. The watch wakes you 12 times an hour at most. Never watch `omp.log` or file changes instead: that wakes you on every line, like the helper that reached 1,089 turns on 2026-11-05.
 - A run belongs to no shell, so it goes on when your waiting shell is killed. Told it was killed → start `offload.py wait <run-dir>` as a background shell and end your turn again. On 2026-11-05 Claude Code killed an implementer's waiting shell and, before this fix, the qwen run under it died 9 edits in.
 7. Check the run (below).
 8. Tell the user in four lines: what works now, the verify output, what Claude changed after qwen, and the run folder.
@@ -121,6 +124,8 @@ The deep pass is due when the repo has no `.claude/risky.md`, or when the diff h
 ## With another /dev skill
 
 Typed next to another `/dev` skill, this skill runs nothing itself. That skill runs as usual, with one line in the plan: `Offload: local` under `Ticket:`. `/dev:2-implement` adds it; `/dev:full-dev-cycle` runs 2-implement, so it gets it too. Every agent that reads the plan then works the way the sections below say. Delete the line to build that plan on Claude again.
+
+The session you talk to still shows the 5-minute progress. When it spawns the implementers, or starts the review pre-pass, it starts `offload.py watch` with no run folder under Monitor, the same way as in "Alone". With no run folder it follows whichever run holds qwen on this machine, by name, so another session's run shows up too. Start it again every 30 minutes until its agents are done. The implementers never watch: what they say never reaches the user, and each wake sends their whole conversation again.
 
 ### Each step, inside dev-implementer
 

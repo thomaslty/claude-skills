@@ -30,7 +30,7 @@ Files go where "Where files go" in `~/.claude/commands/dev/1-design.md` says, in
 - Read-only on source code. You only write under `plan/<slug>/` and `dev/<slug>/explore/`, and publish only to this idea's own Claude Design canvas.
 - Never switch branch, never create a worktree, never commit.
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. You write no code, so its "Database: read dev, write local" is the part that binds you: read dev as much as you need, like a SELECT on the rows the idea touches, and never write to any database.
-- Read `.claude/conventions.md` and `CLAUDE.md` in every repo under the idea's `## Repos` first, and in its submodules (`git submodule status`), if they exist.
+- This repo's `CLAUDE.md` and `.claude/rules/` load on their own. For every other repo under the idea's `## Repos`, and its submodules (`git submodule status`), read its `CLAUDE.md` and `.claude/rules/` first, if they exist.
 - What the human said is theirs, what you guess is yours. Mark a guess `(guess)` until they confirm it, and a choice you made `my call`. A default they never saw is one they could not reject.
 - Answer from the code, the docs or the research before you ask. Ask only what changes what gets built.
 - A risk goes in only when you can name what breaks and for whom. None found → write "none found".

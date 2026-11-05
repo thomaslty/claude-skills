@@ -31,7 +31,7 @@ Each phase runs in a fresh agent. You answer explore's and design's questions an
 | `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix |
 
 `[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket. ⏸ = it stops and waits for you; the build never starts until you say go.
-| `/dev:learn-conventions` | Update `.claude/conventions.md` |
+| `/dev:learn-conventions` | Update `.claude/rules/` |
 
 ## Review
 

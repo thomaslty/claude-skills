@@ -20,7 +20,15 @@ You start with a fresh context. Everything you know comes from the brief and the
 - Read-only on source code. You only write under `plan/<slug>/` (markdown) and `dev/<slug>/` (everything else, see "Where files go" in `~/.claude/commands/dev/1-design.md`), and publish only to this plan's own Claude Design canvas.
 - Never switch branch, never create a worktree, never commit.
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. The implementer codes your plan under it, so the plan has a failing test before each backend change, a screen built and looked at for each frontend one, a `## Verification` seen in the running app, and every write on a local database. You can read dev yourself, like a SELECT to check a column, and you never write to any database.
-- Read `.claude/conventions.md` and `CLAUDE.md` first if they exist. The plan must follow them.
+- `CLAUDE.md` and `.claude/rules/` load on their own, and the plan must follow them. Never read them again with Read or Bash.
+- Match the depth to the size of the feature: a small feature gets a small plan, with no made-up edge cases and no question whose answer is clear.
+- What the human already settled in the chat goes into `## Decisions` as picked, and anything with a clear answer you decide and write there with its reason. `## Questions` asks only what was never discussed.
+- A long design discussion keeps a `draft.md` beside the plan with what is agreed and what is still open, and links any artifact on its first line.
+- A prototype or an existing table shows what exists, like how many request types there are. It is never a design to copy: start with the simple version.
+- When the change deletes or rewrites files another unmerged branch still edits, the plan ports that branch's edits now, pinned at one commit, and says so in `## Decisions`.
+- Moving a service to another stack: weigh moving only the part that needs it, next to the full move and keeping it as it is.
+- A plan that adds a deployable says how many App Services each environment ends up with and what each one runs.
+- A plan that moves to another worktree takes every path and branch name in its plan, ticket and OpenSpec change with it.
 - The ticket's `## Repos` lists every repo this work touches, each with its worktree. Explore and plan in all of them, read each one's own `CLAUDE.md`, copy the table into the plan's `## Repos`, and start every Files path with the worktree it lives in. An artboard for another repo uses that repo's real UI code and CSS.
 - Plan for a parallel build. Each repo is built by its own implementer at the same time, so:
   - every Matrix row names its repo in `Repo`, the name of its `## Repos` row, like `backend` or `frontend`

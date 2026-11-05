@@ -41,7 +41,7 @@ A ticket can need changes in a second repo, like OM.Robot next to Omega. Each ex
 2. Otherwise make one. Orca first: if `orca worktree current --json` answers, load the guide (`orca skills get orca-cli`) and use it:
    - find the repo: `orca repo list --json`; missing → `orca repo add --path <its clone> --json`
    - reuse a worktree already on the ticket's branch: `orca worktree list --repo id:<repoId> --json`
-   - else `orca worktree create --repo id:<repoId> --name <ticket-branch> --parent-worktree active --json`. Leave out `--base-branch`, so it starts from the repo's default base.
+   - else `orca worktree create --repo id:<repoId> --name <ticket-branch> --parent-worktree active --json`. Pass `--base-branch` with the base the user names, usually `origin/dev`: ask for it, since a repo with no base set in Orca starts from a stale default, like Omega.Entity `master` 28 commits behind `dev`.
    - take `path` and `branch` from the JSON. Later Orca calls name it `path:<abs path>`.
 3. No Orca → `git -C <its clone> worktree add <sibling dir> -b <ticket-branch>` from the repo's default base.
 4. Add it to the ticket under `## Repos` as a row: repo, worktree path, branch.

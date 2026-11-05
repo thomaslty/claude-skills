@@ -1,6 +1,6 @@
 ---
 name: learn-conventions
-description: "Learn this project's coding style and conventions from the latest change and your corrections, and merge them into .claude/conventions.md (imported from CLAUDE.md so every session follows them). Runs automatically at the end of every dev: phase; run it by hand after a session where you corrected Claude. Triggers on /dev:learn-conventions, 'remember this convention', 'learn my style'."
+description: "Learn this project's coding style and conventions from the latest change and your corrections, and file them into .claude/rules/, each file scoped with paths so it loads only where it applies. Runs automatically at the end of every dev: phase; run it by hand after a session where you corrected Claude. Triggers on /dev:learn-conventions, 'remember this convention', 'learn my style'."
 argument-hint: "[what you want remembered]"
 ---
 

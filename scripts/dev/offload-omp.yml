@@ -1,0 +1,14 @@
+# Passed to omp with --config on every offload run. It applies to that run
+# only; omp's own settings in ~/.omp are never changed.
+# qwen never runs git: Claude runs every git command, as the safeguard.
+bash:
+  gitGuard: true
+  patterns:
+    - match: "git *"
+      approval: deny
+    - match: "git"
+      approval: deny
+    - match: "gh *"
+      approval: deny
+    - match: "gh"
+      approval: deny

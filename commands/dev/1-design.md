@@ -16,6 +16,7 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
 3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and spawn `dev-designer` with `ticket: plan/<slug>/ticket.md` only when it needs one.
 4. Read its report.
+   - `SIZE: full, <why>` from a `size: small` designer → it found the ticket bigger than it looked. Say why in one line, and start the full path: research in parallel, then a full designer at high or xhigh, the way `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md` says. Never move a ticket back down.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → ask in the terminal (below), run `orca-card.py waiting-decisions`, then stop and wait for the user's reply.
    - `CANVAS: <url>` → the mockups are on that Claude Design canvas, and the plan's `Canvas:` line has it. Give the user the link as one more line. The designer creates and updates the canvas itself; never publish to it from here.
@@ -23,9 +24,10 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
    - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches and sends only the changed artboards to the same canvas. Never start a full redesign for a change.
      - Spawn a NEW `dev-designer` with `ticket` and `change: <their words>`. Never SendMessage the last one: it still holds the whole first design, like 324k tokens on Ticket 1, so every turn is slower and after a break its cache is gone.
      - Then show the parts its `CHANGED:` line names, the way step 6 shows a plan, and back to step 4.
-   - Both spawns pass `effort: medium`. Only a full design in step 3 runs at the default effort.
+   - Both spawns pass `effort: medium`. The first designer in step 3 gets its effort from `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md`: medium for a small ticket, high, or xhigh when the ticket is risky or spans repos.
 6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
-7. Spawn `dev-convention-learner` with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`.
+   - `RISK FILE: drafted` → print `.claude/risky.md` after the plan, with one line: "I drafted this repo's risk list; it raises effort, splits the build and adds a security review. Tell me what to change, or your go covers it."
+7. Spawn `dev-convention-learner` at `effort: low` with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`. Inside `/dev:full-dev-cycle`, skip this step: the cycle runs one learner at the end.
 
 ## Ask in the terminal
 
@@ -40,18 +42,22 @@ Anything the user writes is the answer, also when it is none of the options. Nev
 A ticket with `## Explored` was explored first: `/dev:0-explore` already researched, scoped and grilled it, and its brief is `plan/<slug>/idea.md`. Read the brief yourself, never the code, then pick one of these and say which in one line, with why:
 
 - Nothing left to design → write the plan yourself, no designer and no questions. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
-  - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the brief's `## Research: code` pictures, `## Research` from `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
+  - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the brief's `## Research: code` pictures, `## Research` as one line pointing at the brief's `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
   - Set `Status: approved`, go to step 6, and skip step 7.
 - Only the how is left, like which tests cover the change or in what order the files change → spawn `dev-designer` with `ticket` and `effort: medium`. It builds on explore by `## Explored first` in its own file.
 - Not explored, and a code restructure → no research agents. Spawn `dev-designer` with `ticket`, `scope: restructure` and `effort: medium`; it reads the code itself.
   - A restructure stays inside this repo's code, config and docs: it moves, renames or re-wires how the code reads something, with no new screen, no table change and no outside API, like reading a reorganized `config.yml` and `.env`
   - a new library can still come in, as a question, like PyYAML to read that `config.yml`
   - Why: on that ticket a code researcher took 4 of 18 minutes, then the designer re-read the same 6 files, and a full design wrote a 464-line plan in 9 more
-- Not explored → research in parallel first (below), then spawn `dev-designer` with `ticket` at the default effort, a full design.
+- Not explored, and small → no research agents. Spawn `dev-designer` with `ticket`, `size: small` and `effort: medium`; it reads the code itself and writes a short plan.
+  - Small is the floor the rules set: one repo, no database change, no outside API, no new web screen, and the ticket names nothing on `.claude/risky.md`, like the Snake game on the offload test, which is one file and its tests.
+  - It is only the starting point. The designer reports `SIZE: full` when the code shows more (step 4), and a ticket never moves back down.
+  - Why: on the offload test, research took 4.6 minutes and a full design 15.4 more, and wrote 690 lines for 390 lines of code.
+- Not explored → research in parallel first (below), then spawn `dev-designer` with `ticket` and the effort from `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md`, a full design.
 
 ## Research in parallel
 
-A full design gets its research done before the designer starts, so the designer reads files instead of searching one thing after another. Pick the topics from what the ticket touches, and say which in one line, with why. Then spawn those `dev-researcher` agents in ONE message, each with `brief: plan/<slug>/ticket.md` and `out: dev/<slug>/design/research/`:
+A full design gets its research done before the designer starts, so the designer reads files instead of searching one thing after another. Pick the topics from what the ticket touches, and say which in one line, with why. Then spawn those `dev-researcher` agents in ONE message, each at `effort: medium`, with `brief: plan/<slug>/ticket.md` and `out: dev/<slug>/design/research/`:
 
 - `topic: code`, always
 - `topic: web` only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built

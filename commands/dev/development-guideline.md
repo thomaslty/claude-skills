@@ -9,7 +9,7 @@ description: "Use when starting or planning any development work on this project
 
 The development constitution for this project. Three pillars, no exceptions:
 
-1. **Proposal-driven** — every change starts as an OpenSpec proposal before any code.
+1. **Proposal-driven** — every change starts as an OpenSpec proposal before any code. A small ticket's plan (`Size: small`) is its proposal, with no OpenSpec change.
 2. **Backend = Test-Driven Development (TDD)** — failing test first, then code.
 3. **Frontend = Visual-Driven Development (VDD)** — build against the rendered UI, confirm on screen.
 
@@ -44,6 +44,8 @@ No code before a proposal. The lifecycle is **propose → apply → archive**:
 3. **Archive** — once the change is fully implemented and visually confirmed, finalize it with `opsx:archive` (or `openspec-archive-change`) to fold its specs into the baseline and move the change out of the active set.
 
 In the `dev:` suite you keep two documents and code from both: `plan/<slug>/plan.md`, the `/show-plan` view written down by `/dev:1-design`, and the OpenSpec change `dev-implementer` writes from it in `openspec/changes/<slug>/` before any code. The plan being approved does not replace the change.
+
+The one exception is a plan with `Size: small`: one repo, no database change, no outside API, no new web screen and nothing on `.claude/risky.md`. Its plan is the spec, and no OpenSpec change is written. On the offload test, the change for a Snake game was 20.6 KB that only repeated the plan.
 
 If more than one proposal will be created in this session, use `dev:parallel-development`.
 

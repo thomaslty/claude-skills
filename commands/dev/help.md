@@ -27,8 +27,9 @@ Each phase runs in a fresh agent. You answer explore's and design's questions an
 | `/dev:0-explore` | Grill a rough idea into a ticket: research, canvas, questions per round in the terminal |
 | `/dev:1-design` | Plan in `plan/<slug>/plan.md`, questions asked in the terminal |
 | `/dev:2-implement` | Follow the plan until every step is verified |
-| `/dev:3-review` | 4 lenses, T0 only, fix / skip in the terminal |
-| `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix |
+| `/dev:3-review` | 1 reviewer, a security pass when risky, T0 only, fix / skip in the terminal |
+| `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix → re-review of the fix |
+| `/dev:offload-to-localLLM` | qwen writes the code, Claude checks it; alone or next to the others |
 
 `[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket. ⏸ = it stops and waits for you; the build never starts until you say go.
 | `/dev:learn-conventions` | Update `.claude/rules/` |

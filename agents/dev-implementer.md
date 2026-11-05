@@ -23,11 +23,15 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
   - builds take turns, coding does not: run every image build through `lockf -k -t 1800 /tmp/docker-build.lock <command>`. Two builds at once run colima out of memory
   - drive the browser with headless Playwright only, since chrome-devtools has one browser for all of you
   - tick and append with one Edit each time, never by rewriting the whole plan or `tasks.md`. An Edit that fails because the file changed → read it again and redo the Edit
+- `steps` — optional. Step numbers, like `steps: 2-5`. `/dev:2-implement` split the build by risk: you build these steps, at the effort their `Risk` needs, while another implementer builds the rest of the same repo at the same time. So, as with `repo`:
+  - do only those unticked steps, and leave the `join` steps and `## Verification` to the join implementer
+  - you share one working tree with the other implementer: run only your own steps' `verify:` commands and test files, never the whole suite, since its half-written files would fail yours
+  - tick and append with one Edit each time, and redo an Edit that fails because the file changed
 - `only: join` — optional. Runs after every repo implementer is done. Rebuild every image and restart the whole stack, then do the `join` steps against the real backend, with no `page.route()` answers, then the plan's `## Verification`.
 
 ## Hard rules
 
-- Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now and apply all three pillars. Its pillar 1 is the OpenSpec change below: never skip it, and never write code before the change exists.
+- Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now and apply all three pillars. Its pillar 1 is the OpenSpec change below: never skip it, and never write code before the change exists. The one exception is a plan with `Size: small`: its plan is the spec, so skip the OpenSpec change and every `openspec` command below.
 - `CLAUDE.md` and `.claude/rules/` load on their own; follow them, and never read them again with Read or Bash.
 - The design is on disk: read the artboards in `dev/<slug>/canvas/project/*.dc.html` with Read. You have no Artifact tool.
 - Each evidence screenshot is taken fresh while the thing it proves is on screen, never a copy of another step's file; shoot a toast or popover once it has finished fading in.
@@ -39,6 +43,8 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
 - Hand over only what needs the human's own identity: signing in to get a session. A plan step that says "you tick", "you click" or "you add" in an app is done by you.
 
 ## OpenSpec change, before any code
+
+A plan with `Size: small` skips this whole section.
 
 The work is spec-driven: the approved plan becomes an OpenSpec change in the repo that holds `plan/<slug>/`, before step 1. Use the `openspec` CLI the way the `openspec-propose` and `openspec-apply-change` skills do, but never stop to ask; the approved plan already answers what those skills would ask.
 
@@ -74,21 +80,27 @@ Never leave the plan in a shape that needs one implementer for every repo.
 
 ## Loop
 
-Run `openspec instructions apply --change <slug> --json` and read its `contextFiles` first. Then, for each unticked step in `## Steps` that is yours, in order. With `repo` that is the steps whose `Repo` is this repo; with `only: join`, the `join` steps; otherwise every step:
+Run `openspec instructions apply --change <slug> --json` and read its `contextFiles` first, except with `Size: small`. Then, for each unticked step in `## Steps` that is yours, in order. With `repo` that is the steps whose `Repo` is this repo; with `steps`, those steps; with `only: join`, the `join` steps; otherwise every step:
 
 1. Read the step's block under the plan's `## Detail`, its row in `## Matrix`, and the requirement and design part of the change it touches. Then do the step. Backend: failing test first, see it fail, then the code. Frontend: build it, render it, look at it.
+   - The plan has `Offload: local` → you still write the tests and the frontend look, and qwen writes the code. Do it the way "Each step, inside dev-implementer" in `~/.claude/commands/dev/offload-to-localLLM.md` says.
 2. Run the step's `verify:` check. Paste the real result.
-3. Tick it twice: `- [x]` in the plan, and on its task in `openspec/changes/<slug>/tasks.md`. Append one line under `## Progress`: `- step N: <what changed> — <evidence>`.
+3. Tick it in the plan, in one Edit: `- [x]` on the step and one line under `## Progress`, `- step N: <what changed> — <evidence>`. `tasks.md` is not ticked per step. On the offload test, ticking both files took 25 of the builder's 108 tool calls.
 
 A step that changes what a spec says → update that spec in the change too, so the change matches what was built.
 
-With `repo`, stop when your repo's steps are ticked. Otherwise, when every step is ticked, `openspec instructions apply --change <slug> --json` must say `all_done`. Then do the plan's `## Verification` in the real running app, the way the guideline's visual-confirmation mandate says. Save screenshots under `dev/<slug>/evidence/`.
+With `repo` or `steps`, stop when your steps are ticked. Otherwise, when every step is ticked:
+
+1. Tick every task in `openspec/changes/<slug>/tasks.md` in one Edit, and `openspec instructions apply --change <slug> --json` must say `all_done`. Skip this with `Size: small`.
+2. Do the plan's `## Verification` in the real running app, the way the guideline's visual-confirmation mandate says. A check that a test in this build already covers, and that passed, is done: name that test as its evidence, like `check 6: test_ctrl_c_quits_cleanly passed`. Walk by hand only the rest. Every new or changed screen still gets its screenshot. On the offload test, 10 of the 12 checks were tests already, and walking them again took 20 evidence files.
+3. Save screenshots and captures under `dev/<slug>/evidence/`. With `Offload: local`, the browser pre-check in `offload-to-localLLM.md` runs first, and you still do the rest of `## Verification` yourself.
 
 ## Fix mode (`fixes` given)
 
-Add each fix as a new step under `## Steps`, labelled `review:` and given the finding's id, with its Matrix row and its `Repo`, taken from the folder the finding's `where` starts with, like `backend/…` → `backend`. Add it as a new task in the change's `tasks.md` too. Then run the same loop on those steps only. Re-run `## Verification` at the end.
+Add each fix as a new step under `## Steps`, labelled `review:` and given the finding's id, with its Matrix row and its `Repo`, taken from the folder the finding's `where` starts with, like `backend/…` → `backend`. Add it as a new task in the change's `tasks.md` too, unless `Size: small`. Then run the same loop on those steps only. At the end, run the whole test suite, and only the `## Verification` checks that reach the functions your fixes changed. Name each check you did not rerun, with the test that covers it. On the offload test, rerunning all 12 checks for a 30-line fix took 11.4 minutes and 19 evidence files.
 
 - With `only: change` → add the steps and tasks, then report.
+- The plan has `Offload: local` → a fix over about 20 lines of code goes to qwen; a smaller one, or one in a test, spec or doc, you make yourself. See "Review fixes" in `offload-to-localLLM.md`.
 - With `repo` → the steps are already there. Do the unticked `review:` steps whose `Repo` is this repo, and leave `## Verification` to the join implementer.
 
 ## Report back
@@ -99,7 +111,7 @@ Return exactly:
 STATUS: done | blocked | needs-db
 PLAN: plan/<slug>/plan.md
 STEPS: <ticked>/<total>
-CHANGE: openspec/changes/<slug>/ (<done>/<total> tasks)
+CHANGE: openspec/changes/<slug>/ (<done>/<total> tasks) | none, Size: small
 VERIFIED: <one line of what you saw working, with the evidence path>
 BLOCKER: <one sentence, only when blocked>
 DB: <the database and the env file that names it, only when needs-db>

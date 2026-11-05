@@ -14,10 +14,11 @@ You start with a fresh context. Everything you know comes from the brief and the
 - `answers` — optional. The human's reply to the plan's `## Questions`, in their own words, like `Q1: A, Q2: B but keep the old column`. When present, you are in **finalize** mode.
 - `change` — optional. A change the human asked for on an existing plan, in their words. When present, you are in **update** mode.
 - `scope: restructure` — optional. The ticket only moves, renames or re-wires code in this repo. `## Restructure` below changes Explore mode.
+- `size: small` — optional. `/dev:1-design` judged the ticket small. `## Small ticket` below changes Explore mode.
 
 ## Hard rules
 
-- Read-only on source code. You only write under `plan/<slug>/` (markdown) and `dev/<slug>/` (everything else, see "Where files go" in `~/.claude/commands/dev/1-design.md`), and publish only to this plan's own Claude Design canvas.
+- Read-only on source code. You only write under `plan/<slug>/` (markdown) and `dev/<slug>/` (everything else, see "Where files go" in `~/.claude/commands/dev/1-design.md`), plus `.claude/risky.md` when the repo has none (`## Risk file` below), and publish only to this plan's own Claude Design canvas.
 - Never switch branch, never create a worktree, never commit.
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now. The implementer codes your plan under it, so the plan has a failing test before each backend change, a screen built and looked at for each frontend one, a `## Verification` seen in the running app, and every write on a local database. You can read dev yourself, like a SELECT to check a column, and you never write to any database.
 - `CLAUDE.md` and `.claude/rules/` load on their own, and the plan must follow them. Never read them again with Read or Bash.
@@ -44,7 +45,7 @@ The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and
 
 - Read `plan/<slug>/idea.md` and the files in `dev/<slug>/explore/research/` first; they are your research.
 - Open code only for what the steps need: the `file:line` each one changes, the tests that cover it, and the pieces to reuse. Never re-run a command whose output is already in `research/`.
-- Copy `## Research: online` into the plan's `## Research`. No new web search, except to check a library or API you plan to use, as in step 6.
+- `## Research` links the brief's `## Research: online` and the files in `dev/<slug>/explore/research/`, one line each. Never copy their text. No new web search, except to check a library or API you plan to use, as in step 6.
 - Plan the picked variant only. `## Not doing` and `## Later` go into `## Out of scope`, and each row of `## Risks` becomes a step or a verification row that guards against it.
 - Every row of `## Decided` goes into the Decisions table as it is. Never ask one again.
 - The brief's `Canvas:` is the plan's `Canvas:`. Keep its artboards, and draw only a screen the picked variant does not have yet, into that same canvas, reading `dev/<slug>/canvas` in `## Mockups` as `dev/<slug>/explore/canvas`.
@@ -56,7 +57,7 @@ The ticket has `## Explored` → `/dev:0-explore` already researched, scoped and
 
 - Read every file there first: `code.md` for the code and what the project already has, `web.md` for how others do it, `db.md` for the tables and the schema change, and one file per reference, like `notion-<title>.md` or `drive-<name>.md`.
 - Open code only for what the steps need: the `file:line` each one changes and the tests that cover it. Never re-run a command whose output is already in `research/`.
-- Copy `web.md` into the plan's `## Research`. Search online only to check a library or API you plan to use, as in step 6.
+- `## Research` links each research file, one line each with what it found in a few words, like ``- `dev/<slug>/design/research/web.md` — `lru_cache` clears every tenant at once, 13 sources``. Never copy their text: about 15 agents read the plan, and on the offload test the copied research was 96 of its 690 lines. Search online only to check a library or API you plan to use, as in step 6.
 - No `web.md` → `/dev:1-design` judged no web search is needed. Skip step 4, and write `None` under `## Research`.
 
 ## Restructure (`scope: restructure`)
@@ -72,9 +73,43 @@ A restructure plan takes about 3 minutes. The `config.yml` one took 9, and most 
 - A Detail block has 3 bullets at most: Now, Fix and Real damage.
 - Decisions holds only what a reviewer would question, 8 rows at most. A choice the ticket already made is not one.
 
+## Small ticket (`size: small`)
+
+`/dev:1-design` judged it one repo, no database change, no outside API, no new web screen, and nothing on `.claude/risky.md`. On the offload test, a full design of a Snake game and a 145-line server took 15.4 minutes and wrote 690 lines.
+
+- Read the code yourself, in one or two batched calls. No researcher ran, and you search online only when the ticket brings in something nobody here has built.
+- No canvas.
+- The plan has `Size: small`, and keeps Goal, Decisions, Matrix, Steps, Detail, Verification and Out of scope. It drops System, Folder structure, Code structure, Flow, Research, Reuse and Files: the Matrix's `Touches` column names every file, and each Detail block names the functions it adds.
+- Decisions holds only what a reviewer would question, 5 rows at most.
+- About 150 lines in all.
+- The plan is the spec: the implementer writes no OpenSpec change for it.
+- It is bigger than it looks, like a second repo, a table change, an outside API, a new web screen, or a file or pattern on `.claude/risky.md` → stop before you write the plan, and report `SIZE: full, <why>`. `/dev:1-design` then starts the full design. Never the other way round.
+
+## Risk file
+
+`.claude/risky.md` is the dev suite's list of what is risky in this repo. Design reads it for the designer's effort and the Matrix's `Risk` column, the build for the split, review for the security pass, and `/dev:offload-to-localLLM` for Claude's deep pass.
+
+The repo has none → draft it while you explore, from what you read anyway: auth and permission checks, caches and their keys, locks and threads, tenant filters, money math, and migrations. Write it to `.claude/risky.md` in this shape, each line with its `file:line` reason:
+
+```
+## Claude only
+- `database/migration/` — runs on prod
+## Deep pass
+- `shared/util/cache_helper.py` — the tenant cache key at :29
+## Patterns
+- `tenant_id`
+- `Lock(`
+```
+
+- `## Claude only`: code only Claude writes, never qwen, like migrations and row security SQL.
+- `## Deep pass`: files where a miss breaks other users, like the cache key or a permission gate.
+- `## Patterns`: plain text that marks risky code wherever it is added, like `tenant_id`, `cache_key`, `Lock(`, `Decimal(`, `timeout`.
+- A repo with nothing risky gets the three headings and `- none found`.
+- Say `RISK FILE: drafted` in your report, so the coordinator shows it at the design stop.
+
 ## Explore mode (no `answers`)
 
-1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does. `scope: restructure` → `## Restructure` does.
+1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does. `scope: restructure` → `## Restructure` does. `size: small` → `## Small ticket` does. The repo has no `.claude/risky.md` → draft it as `## Risk file` says.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
 4. **Search online for how this is usually done.** Only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built. A code restructure gets none, like moving settings into a reorganized `config.yml`; write `None — code restructure` under `## Research` and go on to step 5. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options in `## Questions`.
@@ -122,6 +157,7 @@ Speed matters here; a change should take about a minute, not a redesign's five.
 
 Status: draft | approved
 Ticket: plan/<slug>/ticket.md
+Size: small | full
 Canvas: https://claude.ai/artifact/<id>   (only when the ticket has UI)
 
 ## Goal
@@ -134,7 +170,7 @@ The `/show-plan` picture of what the plan touches, in a plain fenced code block.
 (when the plan adds or moves files) Every new or changed folder and file as a tree in a plain fenced code block, each with one line on what it holds.
 
 ## Code structure
-(when the plan adds code) Each new class or function: its signature, a short real snippet, and who calls it.
+(when the plan adds code) Each new class or function: its signature and who calls it, one line each. No body and no snippet: the implementer writes the code. On the offload test this section was 182 lines, close to the 390 lines of real code.
 
 ## Flow
 The execute flow from the entry point to what gets saved, as an ASCII graph in a plain fenced code block, like `POST /api/x → controller → service → om.table`.
@@ -146,9 +182,8 @@ The execute flow from the entry point to what gets saved, as an ASCII graph in a
 (when the frontend calls an endpoint the plan adds or changes) See "Contract" below.
 
 ## Research
-| Approach | Used by / source | Fits here? |
-|---|---|---|
-| <industry-standard approach> | <link> | <yes / no, one line> |
+- `dev/<slug>/design/research/web.md` — <what it found, a few words>
+(one line per research file. With no researcher, one line per approach you looked at, with its link)
 
 ## Reuse
 | Need | Existing piece | Where |
@@ -169,9 +204,9 @@ New libraries: none (or each one, with the reason the installed ones cannot do i
 |---|---|
 
 ## Matrix
-| # | Step | Repo | Touches | Depends on | Effort |
-|---|---|---|---|---|---|
-| 1 | <Swap zone 1 secret names> | <root> | <azure-pipeline-ev-entity.yml> | — | <15 min> |
+| # | Step | Repo | Risk | Touches | Depends on | Effort |
+|---|---|---|---|---|---|---|
+| 1 | <Swap zone 1 secret names> | <root> | — | <azure-pipeline-ev-entity.yml> | — | <15 min> |
 
 ## Steps
 - [ ] 1. <one bounded action> — verify: `<command or check>`
@@ -195,9 +230,11 @@ What this plan deliberately does not do.
 (implementer appends here)
 ```
 
-Each step is one action a fresh agent can do with only this file: name the real file and say what changes. Order the steps so the failing test comes before the code it covers.
+Each step is one file that changes, with its tests in the same step: the step writes the failing test, sees it fail, then writes the code, like `- [ ] 2. leaderboard_server.py: Leaderboard, with its tests in tests/test_leaderboard_server.py — verify: ...`. Never a tests step and then a code step for the same file: on the offload test that made 11 steps for 2 files, and every step costs a verify, a tick and a progress line. A file too big for one step splits by feature. A fresh agent must be able to do the step with only this file: name the real file and say what changes.
 
-`## System`, `## Matrix` and `## Detail` are the `/show-plan` view written down, by Steps 4 to 6 of `~/.claude/commands/show-plan.md`, so the implementer codes from the same picture you showed the human. `## Matrix` has no Status column; the tick in `## Steps` is the status. Its `Repo` column is what `/dev:2-implement` splits the build on. Keep the three in step with `## Steps`: one matrix row and one detail block per step.
+`Risk` is `high` when the step's file is under `## Claude only` or `## Deep pass` in `.claude/risky.md`, or its code adds a `## Patterns` text, like a `Lock(` or a `tenant_id` filter. You may also mark `high` what the list does not name yet, like code where two requests can arrive at once; never mark a step on the list lower. Otherwise `—`. `/dev:2-implement` gives `high` steps an xhigh implementer, and `/dev:3-review` a security pass.
+
+`## System`, `## Matrix` and `## Detail` are the `/show-plan` view written down, by Steps 4 to 6 of `~/.claude/commands/show-plan.md`, so the implementer codes from the same picture you showed the human. `## Matrix` has no Status column; the tick in `## Steps` is the status. Its `Repo` and `Risk` columns are what `/dev:2-implement` splits the build on. Keep the three in step with `## Steps`: one matrix row and one detail block per step.
 
 `## Folder structure`, `## Code structure`, `## Flow` and `## Schema` are what the human reads first when a feature is new. Leave one out only when the plan has nothing for it, like no `## Schema` when no table changes.
 
@@ -307,6 +344,8 @@ Return exactly:
 ```
 STATUS: approved | needs-decisions
 PLAN: plan/<slug>/plan.md
+SIZE: small | full | full, <why it moved up>
+RISK FILE: exists | drafted
 GOAL: <one sentence>
 STEPS: <n>
 DECIDED: <n decisions you made yourself>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge the 4 dev-reviewer outputs into one findings list for the terminal.
+"""Merge the dev-reviewer outputs, and qwen's unconfirmed items, into one findings list for the terminal.
 
 Usage: review-findings.py --plan plan/<slug>/plan.md <lens-output.json>...
 
@@ -14,7 +14,7 @@ import json
 import pathlib
 import sys
 
-LENSES = ["correctness", "security", "feature", "completeness"]
+LENSES = ["correctness", "security", "feature", "completeness", "qwen"]  # qwen: unconfirmed, from the offload pre-pass
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
     by_lens = {lens: sum(lens in f["lenses"] for f in findings) for lens in LENSES}
 
     lines = [f"## Review: {slug}", "", "| Lens | T0 |", "|---|---|"]
-    lines += [f"| {lens} | {count} |" for lens, count in by_lens.items()]
+    lines += [f"| {lens} | {count} |" for lens, count in by_lens.items() if count or lens != "qwen"]
     for f in findings:
         lines += ["", f"### {f['id']}. {f['title']}", "", f"Where: `{f['where']}` · {', '.join(f['lenses'])}", ""]
         # Root cause and impact in the reviewer's own words, uncut; older outputs only have `scenario`.

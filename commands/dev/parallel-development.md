@@ -55,7 +55,7 @@ Create one worktree per proposal under `./.worktree/<change-id>` (or `./.claude/
 
 Dispatch one sub-agent per worktree, in a single message so they run concurrently. Each sub-agent:
 
-- Uses the SAME model and SAME effort level as the main session (inherit — do not downgrade).
+- Uses the SAME model as the main session, and the effort `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md` gives a `dev-implementer`: high, or xhigh when its proposal touches anything on `.claude/risky.md`.
 - Works only inside its assigned worktree.
 - Implements its proposal following `dev:development-guideline` (backend TDD, frontend VDD, visual confirmation).
 - Commits all its changes on its worktree branch.

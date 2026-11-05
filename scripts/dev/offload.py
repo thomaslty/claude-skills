@@ -2,37 +2,30 @@
 """Hand one brief to qwen through omp, wait for it, then check what it changed.
 
 Usage:
-  offload.py start   <run-dir> [--max-time <duration>] [--wait <seconds>]
-  offload.py wait    <run-dir> [--wait <seconds>]
-
-No time limit by default, on the run or on the wait: the run ends when qwen is
-done, and start/wait return when it has. --max-time (like 2h) and --wait (like
-540) are there only for when you want a limit.
-
-An agent runs `start <run-dir>` as a background shell and ends its turn: it is
-woken once, when the run ends, and pays nothing while qwen works.
+  offload.py start   <run-dir> [--timeout <duration>]
+  offload.py wait    <run-dir>
+  offload.py queue
   offload.py check   <run-dir>
   offload.py diff    <run-dir>
   offload.py restore <run-dir> [--all]
-  offload.py queue
 
 <run-dir> is dev/<slug>/offload/<run>/ inside a git repo. Claude writes
 brief.md there first. qwen writes report.md there.
 
-start    queues the run and returns, then waits like `wait`. One qwen run
-         goes at a time on this machine: the others wait in a queue in
-         ~/.cache/dev-offload/. The snapshot is taken when the run's turn
-         comes. A run has no time limit unless --max-time is given. The output goes to omp.log in the
-         run folder.
-wait     waits until the run ends, or --wait seconds when given. Prints STATUS: queued (with how many
-         runs are ahead), running, or the exit code, qwen's report, and the
-         omp session to resume. Run it again while it is not done.
-queue    every run queued or running on this machine.
-check    the free checks: same branch, HEAD, stash and remote refs, no
-         protected file touched, and whether Claude's deep pass is due
-         (.claude/risky.md). Counts as qwen's only the files its omp session
-         edited or wrote, plus the brief's `## Files you may change`; other
-         files that changed during the run are listed as OTHER, not counted.
+start    queues the run and waits until it ends. One qwen run goes at a time
+         on this machine; the others wait in ~/.cache/dev-offload/. The
+         snapshot is taken when the run's turn comes. There is no time limit
+         unless --timeout is given, like 2h: then omp stops the run after that
+         long. An agent runs `start` as a background shell and ends its turn:
+         it is woken once, when the run ends, and pays nothing while qwen works.
+wait     waits until a started run ends, then prints the exit code, qwen's
+         report and the omp session to resume. For picking a run back up.
+queue    the run that is running and the runs waiting, on this machine.
+check    the free checks: same branch, HEAD, stash and remote refs in the repo
+         and its submodules, no protected file touched, and whether Claude's
+         deep pass is due (.claude/risky.md). Counts as qwen's only the files
+         its omp session edited or wrote, plus the brief's `## Files you may
+         change`; other files that changed during the run are listed as OTHER.
 diff     only what qwen changed, as a unified diff against the snapshot.
 restore  puts every protected file qwen touched back the way it was; with
          --all, every file it touched, for a report-only run.
@@ -62,7 +55,7 @@ OVERLAY = HERE / "offload-omp.yml"
 RISKY_FILE = ".claude/risky.md"
 # One local model serves every run. Runs started together slow each other down
 # until omp gives up ("Deadline exceeded": 8 of 8 on 2026-11-05), so they queue here.
-QUEUE = pathlib.Path.home() / ".cache" / "dev-offload"
+QUEUE = pathlib.Path(os.environ.get("OFFLOAD_QUEUE_DIR") or pathlib.Path.home() / ".cache" / "dev-offload")  # tests set their own
 
 # Specs, tests and instructions are Claude's. qwen reads them and never writes them.
 PROTECTED = [
@@ -164,7 +157,7 @@ def cmd_start(a):
     (run / "queued").write_text(ticket.name + "\n")
     log = open(run / "launch.log", "w")
     p = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve()), "_run", str(run),
-                          *(["--max-time", a.max_time] if a.max_time else []), "--ticket", str(ticket)],
+                          *(["--timeout", a.timeout] if a.timeout else []), "--ticket", str(ticket)],
                          stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
     (run / "pid").write_text(str(p.pid))
     print(f"QUEUED: background pid {p.pid}, {ahead(ticket)} run(s) ahead, output in {run.relative_to(root)}/omp.log")
@@ -221,8 +214,8 @@ def cmd_run(a):
             (run / "started").write_text(f"{time.time()}\n")
             rel = run.relative_to(root)
             message = f"Your brief is attached. Do it, then write your report to {rel}/report.md."
-            # No --max-time unless asked: a 60-minute cap cut step 39 off with 2 of 7 files to go.
-            limit = ["--max-time", a.max_time] if a.max_time else []
+            # No limit unless asked: a 60-minute cap cut step 39 off with 2 of 7 files to go.
+            limit = ["--max-time", a.timeout] if a.timeout else []
             omp = [*NO_CREDENTIALS, "omp", "-p", "--thinking", "xhigh", "--no-title", *limit,
                    "--config", str(OVERLAY), "--append-system-prompt", str(RULES),
                    message, f"@{run / 'brief.md'}"]
@@ -246,23 +239,28 @@ def cmd_queue(a):
         print(f"QUEUED:  {t.read_text().strip()}")
 
 
+def alive(run):
+    """True while the run's background process is still there."""
+    try:
+        os.kill(int((run / "pid").read_text()), 0)
+        return True
+    except FileNotFoundError:
+        return True  # start writes the pid right after it launches the process
+    except (ValueError, ProcessLookupError, PermissionError):
+        return False
+
+
 def cmd_wait(a):
-    """Wait until the run ends (or --wait seconds), then print the exit code, the session and the report."""
+    """Wait until the run ends, then print the exit code, the session and the report."""
     run = pathlib.Path(a.run).resolve()
     done = run / "exit_code"
-    end = float("inf") if a.wait is None else time.time() + a.wait
-    while time.time() < end and not done.exists():
+    while not done.exists():
+        if not alive(run):
+            time.sleep(2)  # the run may have written exit_code just before it ended
+            if not done.exists():
+                print("STATUS: stopped without an exit code; its background process is gone. Start it again.")
+                return
         time.sleep(5)
-    if not done.exists():
-        queued = run / "queued"
-        if queued.exists() and not (run / "started").exists():
-            n = ahead(QUEUE / "queue" / queued.read_text().strip())
-            print(f"STATUS: queued, {n} run(s) ahead. Run `offload.py wait {run}` again.")
-            return
-        log = run / "omp.log"
-        lines = log.read_text(errors="replace").count("\n") if log.exists() else 0
-        print(f"STATUS: running ({lines} log lines). Run `offload.py wait {run}` again.")
-        return
     code = done.read_text().strip()
     print(f"STATUS: exited {code}")
     snap_file = run / "snapshot.json"
@@ -464,13 +462,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("run")
-    s.add_argument("--max-time", default=None, help="stop the run after this long, like 2h; none by default")
-    s.add_argument("--wait", type=int, default=None, help="stop waiting after this many seconds; the run goes on. None by default")
-    s.add_argument("--until-done", action="store_true", help=argparse.SUPPRESS)  # the default now; kept so old calls work
-    w = sub.add_parser("wait")
-    w.add_argument("run")
-    w.add_argument("--wait", type=int, default=None, help="stop waiting after this many seconds; the run goes on. None by default")
-    w.add_argument("--until-done", action="store_true", help=argparse.SUPPRESS)  # the default now; kept so old calls work
+    s.add_argument("--timeout", default=None, help="stop the run after this long, like 2h; no limit by default")
+    sub.add_parser("wait").add_argument("run")
     for name in ("check", "diff"):
         sub.add_parser(name).add_argument("run")
     r = sub.add_parser("restore")
@@ -479,7 +472,7 @@ def main():
     sub.add_parser("queue")
     b = sub.add_parser("_run")  # the background half of start; not for direct use
     b.add_argument("run")
-    b.add_argument("--max-time", default=None)
+    b.add_argument("--timeout", default=None)
     b.add_argument("--ticket", required=True)
     a = ap.parse_args()
     {"start": cmd_start, "wait": cmd_wait, "check": cmd_check, "diff": cmd_diff,

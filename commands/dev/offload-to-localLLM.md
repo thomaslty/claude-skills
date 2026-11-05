@@ -49,10 +49,10 @@ Frontend look means the markup and classes: Claude writes them, and leaves the h
 One local model serves every run on the machine, so `offload.py` runs them one at a time. A run started while another goes waits in `~/.cache/dev-offload/`, and `offload.py queue` lists them. On 2026-11-05, 8 runs started together all ended with `Deadline exceeded`.
 
 - Start the next brief when you have the last one's result, not several at once to save time. They only queue.
-- A run has no time limit: it ends when qwen is done. On 2026-11-05 a 60-minute cap cut step 39 off with 5 of its 7 files written. qwen decodes about 41 tokens a second, mostly thinking at `xhigh`, so a big write brief can take more than an hour. Pass `--max-time` only when you want one.
+- A run has no time limit: it ends when qwen is done. On 2026-11-05 a 60-minute cap cut step 39 off with 5 of its 7 files written. qwen decodes about 41 tokens a second, mostly thinking at `xhigh`, so a big write brief can take more than an hour. `--timeout <duration>` exists for a limit; leave it off.
 - The snapshot is taken when the run's turn comes, not when you start it.
 - Never start helper agents to feed qwen faster. They only wait in the same queue, and each one sends its whole conversation again on every turn.
-- Wait in the background, woken once: `offload.py start <run-dir>` as a background shell, then end your turn. Each turn sends your whole conversation again. A 40-minute run waited in the foreground with `--wait 540` costs about 5 turns; a monitor that wakes you on every start, finish or file change costs more, like the helper that reached 1,089 turns on 2026-11-05.
+- Wait in the background, woken once: `offload.py start <run-dir>` as a background shell, then end your turn. Each turn sends your whole conversation again. A 40-minute run waited in the foreground in 9-minute slices costs about 5 turns; a monitor that wakes you on every start, finish or file change costs more, like the helper that reached 1,089 turns on 2026-11-05.
 7. Check the run (below).
 8. Tell the user in four lines: what works now, the verify output, what Claude changed after qwen, and the run folder.
 
@@ -150,7 +150,7 @@ Round 1 of `/dev:3-review` only. It runs at the same time as Claude's reviewers,
 
 1. Write `git diff <base>` and the untracked files into `dev/<slug>/offload/review-1/diff.patch`. qwen cannot run git.
 2. Brief: review that diff against the plan, with the lenses in `~/.claude/agents/dev-reviewer.md`. List each finding in the report as `qwen-<n> | <file>:<line> | <what breaks, for whom>`. `## Files you may change` is "none".
-3. In the same turn you spawn Claude's reviewers, run `offload.py start <run-dir> --wait 0`, so both run together. Then start `offload.py wait <run-dir>` as a background shell job, so you are told when qwen is done.
+3. In the same turn you spawn Claude's reviewers, run `offload.py start <run-dir>` as a background shell, so both run together and you are told when qwen is done.
 4. Print Claude's findings as soon as they are ready. Never wait for qwen.
 5. When qwen's run exits, before the user replies:
    - `offload.py check <run-dir>`. It changed any file → `offload.py restore <run-dir> --all`.

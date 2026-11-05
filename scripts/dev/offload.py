@@ -21,8 +21,8 @@ start    queues the run and waits until it ends. One qwen run goes at a time
 wait     waits until a started run ends, then prints the exit code, qwen's
          report and the omp session to resume. For picking a run back up.
 queue    the run that is running and the runs waiting, on this machine.
-check    the free checks: same branch, HEAD, stash and remote refs in the repo
-         and its submodules, no protected file touched, and whether Claude's
+check    the free checks: same branch, HEAD, stash and remote ref of that
+         branch in the repo and its submodules, no protected file touched, and whether Claude's
          deep pass is due (.claude/risky.md). Counts as qwen's only the files
          its omp session edited or wrote, plus the brief's `## Files you may
          change`; other files that changed during the run are listed as OTHER.
@@ -155,12 +155,14 @@ def cmd_start(a):
     ticket = QUEUE / "queue" / f"{time.time_ns()}-{os.getpid()}"
     ticket.write_text(str(run) + "\n")
     (run / "queued").write_text(ticket.name + "\n")
-    log = open(run / "launch.log", "w")
-    p = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve()), "_run", str(run),
-                          *(["--timeout", a.timeout] if a.timeout else []), "--ticket", str(ticket)],
-                         stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
-    (run / "pid").write_text(str(p.pid))
-    print(f"QUEUED: background pid {p.pid}, {ahead(ticket)} run(s) ahead, output in {run.relative_to(root)}/omp.log")
+    runner = shlex.join([sys.executable, str(pathlib.Path(__file__).resolve()), "_run", str(run),
+                         *(["--timeout", a.timeout] if a.timeout else []), "--ticket", str(ticket)])
+    # sh starts the run and exits, so the run belongs to no shell: on 2026-11-05 Claude Code
+    # killed an agent's waiting shell and the qwen run under it died, 9 edits in.
+    out = subprocess.run(["/bin/sh", "-c", f"{runner} </dev/null >{shlex.quote(str(run / 'launch.log'))} 2>&1 & echo $!"],
+                         capture_output=True, text=True, start_new_session=True).stdout.strip()
+    (run / "pid").write_text(out)
+    print(f"QUEUED: background pid {out}, {ahead(ticket)} run(s) ahead, output in {run.relative_to(root)}/omp.log")
     cmd_wait(a)
 
 
@@ -343,8 +345,12 @@ def repo_checks(name, path, state):
     if "remotes" in state:
         moved = sorted(r for r in set(now["remotes"]) | set(state["remotes"])
                        if now["remotes"].get(r) != state["remotes"].get(r))
-        print(f"REMOTES{tag}: {'ok' if not moved else 'PUSHED ' + ', '.join(moved)}")
-        bad |= bool(moved)
+        # Only the branch the run was on counts: a fetch by another session moves the
+        # other refs, like origin/dev during the steps 40-41 run on 2026-11-05.
+        pushed = [r for r in moved if state["branch"] and r.endswith("/" + state["branch"])]
+        print(f"REMOTES{tag}: {'PUSHED ' + ', '.join(pushed) if pushed else 'ok'}"
+              + (f" ({len(moved) - len(pushed)} other ref(s) fetched, not counted)" if len(moved) > len(pushed) else ""))
+        bad |= bool(pushed)
     else:
         print(f"REMOTES{tag}: not recorded in this snapshot")
     return bad

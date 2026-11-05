@@ -53,6 +53,7 @@ One local model serves every run on the machine, so `offload.py` runs them one a
 - The snapshot is taken when the run's turn comes, not when you start it.
 - Never start helper agents to feed qwen faster. They only wait in the same queue, and each one sends its whole conversation again on every turn.
 - Wait in the background, woken once: `offload.py start <run-dir>` as a background shell, then end your turn. Each turn sends your whole conversation again. A 40-minute run waited in the foreground in 9-minute slices costs about 5 turns; a monitor that wakes you on every start, finish or file change costs more, like the helper that reached 1,089 turns on 2026-11-05.
+- A run belongs to no shell, so it goes on when your waiting shell is killed. Told it was killed → start `offload.py wait <run-dir>` as a background shell and end your turn again. On 2026-11-05 Claude Code killed an implementer's waiting shell and, before this fix, the qwen run under it died 9 edits in.
 7. Check the run (below).
 8. Tell the user in four lines: what works now, the verify output, what Claude changed after qwen, and the run folder.
 

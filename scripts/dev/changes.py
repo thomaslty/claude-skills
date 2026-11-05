@@ -55,11 +55,45 @@ def is_artifact(rel):
     return any(fnmatch.fnmatch(rel, a) for a in ARTIFACTS)
 
 
+def submodules(root):
+    """Each checked-out submodule under `root`, nested ones too, as a path relative to `root`.
+
+    `git ls-files` stops at a submodule, so without these a run in a wrapper repo
+    like Omega.Next.AIO sees nothing that changed in backend/ (2026-11-05: 905
+    files snapshotted, 0 of them in backend/).
+    """
+    out = git(root, "ls-files", "-s", "-z") or ""
+    subs = []
+    for entry in out.split("\0"):
+        if entry.startswith("160000 ") and "\t" in entry:
+            rel = entry.split("\t", 1)[1]
+            if (root / rel / ".git").exists():
+                subs.append(rel)
+                subs.extend(f"{rel}/{inner}" for inner in submodules(root / rel))
+    return subs
+
+
+def repo_of(root, rel, snap=None):
+    """The submodule that holds `rel` ("" for the top repo) and `rel` inside it."""
+    subs = snap["repos"].keys() if snap and "repos" in snap else submodules(root)
+    best = ""
+    for sub in subs:
+        if sub and rel.startswith(sub + "/") and len(sub) > len(best):
+            best = sub
+    return best, rel[len(best) + 1:] if best else rel
+
+
 def tracked_and_untracked(root):
-    """Every file git tracks or would add, minus gitignored files and build output."""
+    """Every file git tracks or would add, in the repo and its submodules, minus gitignored files and build output."""
     out = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "-z"],
                          capture_output=True).stdout.decode()
-    return sorted({p for p in out.split("\0") if p and not is_artifact(p)})
+    subs = submodules(root)
+    files = {p for p in out.split("\0") if p and not is_artifact(p) and p not in subs}
+    for sub in subs:
+        if "/" in sub and any(sub.startswith(s + "/") for s in subs if s != sub):
+            continue  # a nested submodule is listed by its parent's own call
+        files |= {f"{sub}/{p}" for p in tracked_and_untracked(root / sub)}
+    return sorted(files)
 
 
 def sha(path):
@@ -97,9 +131,9 @@ def remote_refs(root):
 
 
 def dirty_files(root):
-    """Paths with uncommitted changes, untracked ones included."""
-    out = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "-z", "--untracked-files=all"],
-                         capture_output=True).stdout.decode()
+    """Paths with uncommitted changes, untracked ones included, in the repo and its submodules."""
+    out = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "-z", "--untracked-files=all",
+                          "--ignore-submodules=all"], capture_output=True).stdout.decode()
     dirty, entries, i = set(), out.split("\0"), 0
     while i < len(entries):
         e = entries[i]
@@ -108,7 +142,21 @@ def dirty_files(root):
             if e[0] in "RC":  # a rename has its old path in the next entry
                 i += 1
         i += 1
+    subs = submodules(root)
+    for sub in subs:
+        if any(sub.startswith(s + "/") for s in subs if s != sub):
+            continue  # a nested submodule is listed by its parent's own call
+        dirty |= {f"{sub}/{p}" for p in dirty_files(root / sub)}
     return dirty
+
+
+def repo_state(path):
+    """The branch, HEAD, stash and remote refs of one repo."""
+    head = git(path, "rev-parse", "HEAD")
+    return {"branch": (git(path, "branch", "--show-current") or "").strip(),
+            "head": head.strip() if head else None,
+            "stash": stash_count(path),
+            "remotes": remote_refs(path)}
 
 
 def snapshot(root, dest, extra=None):
@@ -129,13 +177,10 @@ def snapshot(root, dest, extra=None):
             copy = before / rel
             copy.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(p, copy)
-    head = git(root, "rev-parse", "HEAD")
     snap = {
         "root": str(root),
-        "branch": (git(root, "branch", "--show-current") or "").strip(),
-        "head": head.strip() if head else None,
-        "stash": stash_count(root),
-        "remotes": remote_refs(root),
+        **repo_state(root),
+        "repos": {sub: repo_state(root / sub) for sub in submodules(root)},
         "hashes": hashes,
         "time": time.time(),
         **(extra or {}),
@@ -173,12 +218,21 @@ def before_text(root, dest, rel, snap):
     copy = dest / "before" / rel
     if copy.exists():
         return copy.read_text(errors="replace")
-    if rel in snap["hashes"] and snap["head"]:
-        # the snapshot's commit, not today's HEAD: an implementer may commit after the snapshot
-        t = head_text(root, rel, snap["head"])
+    if rel in snap["hashes"]:
+        t = snapshot_head_text(root, rel, snap)
         if t is not None:
             return t
     return ""
+
+
+def snapshot_head_text(root, rel, snap):
+    """The file at the snapshot's commit of the repo or submodule that holds it.
+
+    The snapshot's commit, not today's HEAD: an implementer may commit after the snapshot.
+    """
+    sub, inner = repo_of(root, rel, snap)
+    head = snap.get("repos", {}).get(sub, {}).get("head") if sub else snap["head"]
+    return head_text(root / sub if sub else root, inner, head) if head else None
 
 
 def added_lines(old, new):

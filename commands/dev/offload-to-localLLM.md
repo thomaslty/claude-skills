@@ -42,7 +42,16 @@ Frontend look means the markup and classes: Claude writes them, and leaves the h
    - The code it needs is under about 300 lines → say so in one line and write it on Claude instead. On the first tests, a 156-line Snake took 8.2 minutes through qwen and 0.7 on Claude, because the brief and the checks cost more than the code.
 4. The task changes behaviour → write the tests first, in the repo's own test folder, and see them fail. Name the interface they need, like `next_head(head, direction)`, in the brief. qwen never writes or edits a test.
 5. Write `brief.md` in the run folder (below).
-6. `offload.py start <run-dir>`. It runs omp in the background, with its output in `omp.log` in the run folder. While it prints `STATUS: running`, run `offload.py wait <run-dir>`. Once it exits, `wait` prints the `omp --resume` line that picks that qwen session back up, and saves it in `session.txt`. Pass that line on to the user.
+6. Run `offload.py start <run-dir> --until-done` as a background shell (`run_in_background`) and end your turn. It queues the run, runs omp when its turn comes, with the output in `omp.log` in the run folder, and exits only when the run does. You are woken once, then. Its output has the exit code, qwen's report, and the `omp --resume` line that picks that qwen session back up, which it also saves in `session.txt`. Pass that line on to the user.
+
+## One run at a time
+
+One local model serves every run on the machine, so `offload.py` runs them one at a time. A run started while another goes waits in `~/.cache/dev-offload/`, and `offload.py queue` lists them. On 2026-11-05, 8 runs started together all ended with `Deadline exceeded`.
+
+- Start the next brief when you have the last one's result, not several at once to save time. They only queue.
+- `--max-time` and the snapshot start when the run's turn comes, not when you start it.
+- Never start helper agents to feed qwen faster. They only wait in the same queue, and each one sends its whole conversation again on every turn.
+- Wait in the background, woken once: `offload.py start <run-dir> --until-done` as a background shell, then end your turn. Each turn sends your whole conversation again. A 40-minute run waited in the foreground with `--wait 540` costs about 5 turns; a monitor that wakes you on every start, finish or file change costs more, like the helper that reached 1,089 turns on 2026-11-05.
 7. Check the run (below).
 8. Tell the user in four lines: what works now, the verify output, what Claude changed after qwen, and the run folder.
 
@@ -78,7 +87,9 @@ The exact commands, run from the repo root. Run each one yourself before you han
 
 ## Checking a run
 
-1. `offload.py check <run-dir>`, straight after the run and before you change anything yourself: it counts every change since the snapshot as qwen's. It checks the branch, HEAD, stash and remote refs are the same, that no protected file was touched, and whether the deep pass is due.
+1. `offload.py check <run-dir>`, straight after the run and before you change anything yourself.
+   - It counts as qwen's the files its omp session edited or wrote, plus the brief's `## Files you may change`. Anything else that changed during the run is listed as `OTHER`: another agent's work, or qwen editing through a shell command. Read those too.
+   - It checks the branch, HEAD, stash and remote refs are the same in the repo and in every submodule, like `backend/` inside a wrapper repo. It also checks that no protected file was touched, and whether the deep pass is due.
    - `PROTECTED: n touched` → `offload.py restore <run-dir>`, then re-brief.
    - `BRANCH`, `HEAD` or `STASH` changed, or `REMOTES: PUSHED` → stop and tell the user. Never fix it with git yourself.
 2. Run every `## Verify` command yourself. Trust that output, not the report. Then run the thing the way a user would: a terminal app in tmux with `remain-on-exit on`, a page in chrome-devtools, an API with curl.
@@ -118,8 +129,10 @@ Before the first step: add up the code the plan adds for your repo, from its `##
 3. Otherwise write what is Claude's first: the backend test, seen to fail; the frontend markup and classes, with the handlers left empty. Then write `dev/<slug>/offload/step-<N>/brief.md`, with the step's `verify:` under `## Verify`.
    - The plan is the spec, so the brief points at it and never copies it: `## Goal` says "do step N of `plan/<slug>/plan.md`: its `## Detail` block, and the parts of `## Code structure`, `## Flow` and `## Contract` it names". Add only what the plan does not say, like the test names it has to pass. At most 15 lines.
    - Why: on the first full-cycle test the briefs came to 26.8 KB, more than the 15.6 KB of code qwen wrote from them, and Claude spent more tokens than building it alone.
-4. `offload.py start`, then `wait` until it exits, then check the run as above.
+4. `offload.py start <run-dir> --until-done` as a background shell, end your turn, and check the run as above when you are woken.
 5. Run the step's `verify:` yourself and paste it. Tick the step yourself. qwen never ticks.
+
+One implementer per repo feeds qwen, one brief after another, and starts no helper agents. On 2026-11-05 one backend build started 9 helpers to feed qwen faster. Every first-round run timed out, the helpers wrote most of the code themselves, and they used about 2.36 billion cached-token reads in one night.
 
 ### Browser pre-check
 

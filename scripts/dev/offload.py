@@ -294,10 +294,18 @@ def cmd_wait(a):
 
 
 def brief_files(run):
-    """The paths under the brief's `## Files you may change`."""
+    """The paths under the brief's `## Files you may change`, with `{a,b}.swift` opened up into one path each."""
     text = (run / "brief.md").read_text(errors="replace")
     m = re.search(r"^## Files you may change\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
-    return re.findall(r"`([^`]+)`", m.group(1)) if m else []
+    return [p for g in re.findall(r"`([^`]+)`", m.group(1)) for p in braces(g)] if m else []
+
+
+def braces(path):
+    """`Sources/{Database,LogTailer}.swift` as its two paths; fnmatch cannot read braces."""
+    m = re.search(r"\{([^{}]*,[^{}]*)\}", path)
+    if not m:
+        return [path]
+    return [p for alt in m.group(1).split(",") for p in braces(path[:m.start()] + alt + path[m.end():])]
 
 
 def omp_written(run, root, snap):
@@ -591,9 +599,14 @@ def run_times(run):
     return (float(started.read_text()) if started.exists() else snap["time"]), snap
 
 
+def label(run):
+    """The repo's folder name, like `tg-spark-tailscale-proxy`, from <repo>/dev/<slug>/offload/<run>."""
+    return run.parents[3].name
+
+
 def progress(run, every, cache):
     """One progress block for a run, as markdown, and the row it adds to progress.md."""
-    name = f"{run.parent.parent.name}/{run.name}"
+    name = label(run)
     now = time.time()
     started, snap = run_times(run)
     if started is None:
@@ -681,7 +694,7 @@ def log_progress(run, row):
 
 def ended(run):
     """The last line for a run that is over."""
-    name = f"{run.parent.parent.name}/{run.name}"
+    name = label(run)
     code_file = run / "exit_code"
     for _ in range(10):  # the run lets go of the lock a moment before it writes exit_code
         if code_file.exists() or not alive(run):
@@ -724,7 +737,7 @@ def cmd_watch(a):
                 if row:
                     log_progress(cur, row)
             except Exception as e:  # one bad read must not end the watch
-                block, row = f"qwen {cur.name}: could not read its progress this time ({e})", True
+                block, row = f"qwen {label(cur)}: could not read its progress this time ({e})", True
             # Before omp's first turn, look again in 15 seconds, but say so only once per tick.
             if row or time.time() - shown >= every:
                 print(block + "\n", flush=True)

@@ -41,7 +41,7 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
 - Do the steps yourself, one after another. Start helper agents only when ALL of these hold, and write the reason under `## Progress` before you start them:
   - what is left splits into 2 or more groups that share no file in `Touches` and no `Depends on`
   - each group is at least half a day of work for you, not a step or a file each
-  - the plan has no `Offload: local`, since qwen runs one brief at a time and helpers only queue behind it
+  - the plan has no `Offload: local`, since you can start up to 4 qwen runs yourself and a helper only adds its own turns
   - at most 3 helpers, and never a helper of a helper
   Why: every agent sends its whole conversation again on each turn. On 2026-11-05 one backend build started 9 helpers. They made 2.36 billion cached-token reads in one night, hit the 5-hour limit twice, and still wrote most of the code themselves after qwen timed out.
 - Keep your own conversation short. When a phase of the plan is done, or after about 300 turns, commit, push, write `## Progress`, and stop with `STATUS: partial` and what is left. The coordinator starts a fresh implementer, which continues from the ticks.

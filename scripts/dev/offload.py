@@ -13,9 +13,9 @@ Usage:
 <run-dir> is dev/<slug>/offload/<run>/ inside a git repo. Claude writes
 brief.md there first. qwen writes report.md there.
 
-start    queues the run and waits until it ends. One qwen run goes at a time
-         on this machine; the others wait in ~/.cache/dev-offload/. The
-         snapshot is taken when the run's turn comes. There is no time limit
+start    starts the run and waits until it ends. Up to 4 qwen runs go at once
+         on this machine; a 5th waits in ~/.cache/dev-offload/ for a free slot
+         and says QWEN BUSY. The snapshot is taken when the run gets its slot. There is no time limit
          unless --timeout is given, like 2h: then omp stops the run after that
          long. An agent runs `start` as a background shell and ends its turn:
          it is woken once, when the run ends, and pays nothing while qwen works.
@@ -25,10 +25,11 @@ watch    prints how the run is going every 5 minutes, and once right away:
          elapsed, ETA from the brief's files qwen has written, context window,
          prefill and decode speed, and the server's KV cache and load. Each
          block is also a row in progress.md in the run folder. It exits when
-         the run ends. With no <run-dir> it follows whichever run is going on
-         this machine and never exits. Claude runs it under Monitor, so each
+         the run ends. With no <run-dir> it follows every run going on this
+         machine, prints QWEN BUSY for each run that waits for a slot, and
+         never exits. Claude runs it under Monitor, so each
          block wakes it to pass on to you.
-queue    the run that is running and the runs waiting, on this machine.
+queue    the runs going and the runs waiting for a slot, on this machine.
 check    the free checks: same branch, HEAD, stash and remote ref of that
          branch in the repo and its submodules, no protected file touched, and whether Claude's
          deep pass is due (.claude/risky.md). Counts as qwen's only the files
@@ -62,8 +63,9 @@ import changes as ch  # noqa: E402  the shared snapshot and diff
 RULES = HERE / "offload-worker-rules.md"
 OVERLAY = HERE / "offload-omp.yml"
 RISKY_FILE = ".claude/risky.md"
-# One local model serves every run. Runs started together slow each other down
-# until omp gives up ("Deadline exceeded": 8 of 8 on 2026-11-05), so they queue here.
+# One local model serves every run. 8 at once each went 5-6 times slower and all hit the
+# old 60-minute cap ("Deadline exceeded", 2026-11-05); 4 fit the server's memory easily.
+SLOTS = 4
 QUEUE = pathlib.Path(os.environ.get("OFFLOAD_QUEUE_DIR") or pathlib.Path.home() / ".cache" / "dev-offload")  # tests set their own
 
 # Specs, tests and instructions are Claude's. qwen reads them and never writes them.
@@ -113,21 +115,22 @@ def matches(rel, globs):
     return False
 
 
-def omp_session(root, since):
-    """The omp session this run wrote: started in `root` after `since`."""
-    best = None
+def omp_session(root, since, run):
+    """The omp session this run wrote: started in `root` after `since`, asked for `run`'s report.
+
+    The report path tells apart runs that go at once in one repo; it is in the first message.
+    """
+    best, ask = None, f"{run.resolve().relative_to(root.resolve())}/report.md"
     for f in pathlib.Path.home().glob(".omp/agent/sessions/*/*.jsonl"):
         if f.stat().st_mtime < since:
             continue
         try:
-            with open(f) as fh:
-                for line in fh:
-                    d = json.loads(line)
-                    if d.get("type") == "session":
-                        break
-                else:
-                    continue
-        except (ValueError, OSError):
+            with open(f, errors="replace") as fh:
+                head = [line for _, line in zip(range(12), fh)]
+            d = next(json.loads(line) for line in head if '"type":"session"' in line)
+        except (StopIteration, ValueError, OSError):
+            continue
+        if ask not in "".join(head):
             continue
         if d.get("cwd") == str(root) and ts(d.get("timestamp")) >= since - 5:
             if best is None or f.stat().st_mtime > best.stat().st_mtime:
@@ -165,6 +168,7 @@ def cmd_start(a):
     ticket = QUEUE / "queue" / f"{time.time_ns()}-{os.getpid()}"
     ticket.write_text(str(run) + "\n")
     (run / "queued").write_text(ticket.name + "\n")
+    flag = busy(run, ticket)
     runner = shlex.join([sys.executable, str(pathlib.Path(__file__).resolve()), "_run", str(run),
                          *(["--timeout", a.timeout] if a.timeout else []), "--ticket", str(ticket)])
     # sh starts the run and exits, so the run belongs to no shell: on 2026-11-05 Claude Code
@@ -172,7 +176,7 @@ def cmd_start(a):
     out = subprocess.run(["/bin/sh", "-c", f"{runner} </dev/null >{shlex.quote(str(run / 'launch.log'))} 2>&1 & echo $!"],
                          capture_output=True, text=True, start_new_session=True).stdout.strip()
     (run / "pid").write_text(out)
-    print(f"QUEUED: background pid {out}, {ahead(ticket)} run(s) ahead, output in {run.relative_to(root)}/omp.log")
+    print(flag or f"STARTED: background pid {out}, output in {run.relative_to(root)}/omp.log", flush=True)
     cmd_wait(a)
 
 
@@ -192,35 +196,62 @@ def waiting():
     return out
 
 
-def ahead(ticket):
-    """How many runs are queued before `ticket`, plus the one running now."""
-    return sum(1 for t in waiting() if t.name < ticket.name) + (1 if running_run() else 0)
+def older(ticket):
+    """How many live runs were queued before `ticket`."""
+    return sum(1 for t in waiting() if t.name < ticket.name)
 
 
-def running_run():
-    """The run folder that holds the qwen lock now, or None."""
-    f = QUEUE / "running"
-    if not f.exists():
+def running_runs():
+    """The run folders that hold a slot now."""
+    out = []
+    for i in range(SLOTS):
+        f = QUEUE / f"running-{i}"
+        if not f.exists():
+            continue
+        try:
+            with open(QUEUE / f"slot-{i}.lock", "a") as fh:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(fh, fcntl.LOCK_UN)
+        except BlockingIOError:
+            out.append(pathlib.Path(f.read_text().strip()))
+    return out
+
+
+def busy(run, ticket):
+    """The QWEN BUSY flag for a run that waits because every slot is taken, or None when it gets one."""
+    taken, ahead = running_runs(), older(ticket)
+    if len(taken) + ahead < SLOTS:
         return None
-    try:
-        with open(QUEUE / "qwen.lock", "a") as fh:
-            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            fcntl.flock(fh, fcntl.LOCK_UN)
-        return None
-    except BlockingIOError:
-        return f.read_text().strip() or None
+    since = clock(time.time() - int(ticket.name.split("-")[0]) / 1e9)
+    names = ", ".join(label(r) for r in taken)
+    return (f"QWEN BUSY: {label(run)} has waited {since} for a slot · "
+            f"{len(taken)} of {SLOTS} runs going ({names}) · {ahead} more waiting ahead of it")
+
+
+def take_slot(ticket):
+    """Wait for a free slot, oldest run first; its number and the locked file that holds it."""
+    while True:
+        if not older(ticket):
+            for i in range(SLOTS):
+                fh = open(QUEUE / f"slot-{i}.lock", "a")
+                try:
+                    fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return i, fh
+                except BlockingIOError:
+                    fh.close()
+        time.sleep(2)
 
 
 def cmd_run(a):
-    """The background half of start: wait for the lock, snapshot, run omp, write exit_code."""
+    """The background half of start: wait for a slot, snapshot, run omp, write exit_code."""
     run = pathlib.Path(a.run).resolve()
     ticket = pathlib.Path(a.ticket)
-    with open(QUEUE / "qwen.lock", "a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    slot, lock = take_slot(ticket)
+    with lock:
         try:
             ticket.unlink(missing_ok=True)
             (run / "queued").unlink(missing_ok=True)
-            (QUEUE / "running").write_text(str(run) + "\n")
+            (QUEUE / f"running-{slot}").write_text(str(run) + "\n")
             root = ch.repo_root(run)
             ch.snapshot(root, run, {"brief": ch.sha(run / "brief.md")})
             (run / "started").write_text(f"{time.time()}\n")
@@ -238,15 +269,17 @@ def cmd_run(a):
         except Exception as e:  # the run must always end with an exit_code, or `wait` waits forever
             print(f"run failed before omp finished: {e}", file=sys.stderr)
             code = 98
-        finally:
-            (QUEUE / "running").unlink(missing_ok=True)
+        finally:  # before the slot is let go, so the next run's file is never the one removed
+            (QUEUE / f"running-{slot}").unlink(missing_ok=True)
         (run / "exit_code").write_text(f"{code}\n")
 
 
 def cmd_queue(a):
-    """List the run that is running and the runs waiting, oldest first."""
-    now = running_run()
-    print(f"RUNNING: {now or 'none'}")
+    """List the runs going and the runs waiting, oldest first."""
+    runs = running_runs()
+    print(f"RUNNING: {len(runs)} of {SLOTS}")
+    for r in runs:
+        print(f"  {r}")
     for t in waiting():
         print(f"QUEUED:  {t.read_text().strip()}")
 
@@ -278,7 +311,7 @@ def cmd_wait(a):
     snap_file = run / "snapshot.json"
     if snap_file.exists():
         snap = json.loads(snap_file.read_text())
-        session = omp_session(pathlib.Path(snap["root"]), snap["time"])
+        session = omp_session(pathlib.Path(snap["root"]), snap["time"], run)
         if session:
             (run / "session.txt").write_text(str(session) + "\n")
             print(f"SESSION: omp --resume {shlex.quote(str(session))}")
@@ -311,7 +344,7 @@ def braces(path):
 def omp_written(run, root, snap):
     """Every file the run's omp session edited or wrote, relative to `root`; None when the session is not found."""
     saved = run / "session.txt"
-    session = pathlib.Path(saved.read_text().strip()) if saved.exists() else omp_session(root, snap["time"])
+    session = pathlib.Path(saved.read_text().strip()) if saved.exists() else omp_session(root, snap["time"], run)
     if not session or not session.exists():
         return None
     return session_writes(session, root)
@@ -600,8 +633,11 @@ def run_times(run):
 
 
 def label(run):
-    """The repo's folder name, like `tg-spark-tailscale-proxy`, from <repo>/dev/<slug>/offload/<run>."""
-    return run.parents[3].name
+    """The repo's folder name and the run, like `tg-spark-tailscale-proxy/step-1`, from <repo>/dev/<slug>/offload/<run>.
+
+    The run's name too, since up to 4 runs go at once, often from one repo.
+    """
+    return f"{run.parents[3].name}/{run.name}"
 
 
 def progress(run, every, cache):
@@ -613,12 +649,11 @@ def progress(run, every, cache):
         queued = run / "queued"
         ticket = QUEUE / "queue" / queued.read_text().strip() if queued.exists() else None
         if ticket:
-            return f"qwen {name} · queued {clock(now - int(ticket.name.split('-')[0]) / 1e9)}, " \
-                   f"{ahead(ticket)} run(s) ahead", None
-        return f"qwen {name} · waiting for its turn", None
+            return busy(run, ticket) or f"qwen {name} · taking a free slot", None
+        return f"qwen {name} · starting", None
     elapsed = now - started
     root = pathlib.Path(snap["root"])
-    session = omp_session(root, snap["time"])
+    session = omp_session(root, snap["time"], run)
     if not session:
         return f"qwen {name} · running {clock(elapsed)} · omp is starting, no model turn yet", None
     rows, model, last = turns(session)
@@ -666,9 +701,10 @@ def progress(run, every, cache):
                      f"{a.get('vllm:num_requests_waiting', 0):.0f} waiting")
     elif srv:
         state.append("server metrics not answering")
+    state.append(f"{len(running_runs())} of {SLOTS} runs going")
     queued = len(waiting())
     if queued:
-        state.append(f"{queued} run(s) queued after it")
+        state.append(f"{queued} waiting for a slot")
 
     recent = speeds([r for r in rows if r["end"] >= now - every], every)
     whole = speeds(rows, elapsed)
@@ -712,37 +748,45 @@ def ended(run):
 
 
 def cmd_watch(a):
-    """Print a progress block every --every until the run ends; with no run, follow whichever run is going."""
+    """Print a block for each run every --every until it ends, and QWEN BUSY for each run that waits for a slot."""
     every = seconds(a.every)
-    cache, cur, next_at, shown = {}, None, 0, 0
+    cache, ticks, flagged, said_end = {}, {}, {}, False
     fixed = pathlib.Path(a.run).resolve() if a.run else None
     while True:
         if fixed:
-            now_run = None if (fixed / "exit_code").exists() or not alive(fixed) else fixed
+            runs = [] if (fixed / "exit_code").exists() or not alive(fixed) else [fixed]
         else:
-            r = running_run()
-            now_run = pathlib.Path(r) if r else None
-        if cur and now_run != cur:
-            print(ended(cur), flush=True)
-            cur = None
-        if fixed and now_run is None:
-            if not shown:
+            runs = running_runs()
+        for gone in [r for r in ticks if r not in runs]:
+            print(ended(gone), flush=True)
+            del ticks[gone]
+            said_end = True
+        if fixed and not runs:
+            if not said_end:
                 print(ended(fixed), flush=True)
             return
-        if now_run and now_run != cur:
-            cur, next_at, shown = now_run, 0, 0
-        if cur and time.time() >= next_at:
+        if not fixed:  # a run that waits for a slot holds none, so it is flagged here
+            for t in waiting():
+                if time.time() - flagged.get(t.name, 0) >= every:
+                    flag = busy(pathlib.Path(t.read_text().strip()), t)
+                    if flag:
+                        print(flag + "\n", flush=True)
+                        flagged[t.name] = time.time()
+        for run in runs:
+            next_at, shown = ticks.setdefault(run, [0, 0])
+            if time.time() < next_at:
+                continue
             try:
-                block, row = progress(cur, every, cache)
+                block, row = progress(run, every, cache)
                 if row:
-                    log_progress(cur, row)
+                    log_progress(run, row)
             except Exception as e:  # one bad read must not end the watch
-                block, row = f"qwen {label(cur)}: could not read its progress this time ({e})", True
+                block, row = f"qwen {label(run)}: could not read its progress this time ({e})", True
             # Before omp's first turn, look again in 15 seconds, but say so only once per tick.
             if row or time.time() - shown >= every:
                 print(block + "\n", flush=True)
-                shown = time.time()
-            next_at = time.time() + (every if row else 15)
+                ticks[run][1] = time.time()
+            ticks[run][0] = time.time() + (every if row else 15)
         time.sleep(5)
 
 

@@ -2,11 +2,15 @@
 """Hand one brief to qwen through omp, wait for it, then check what it changed.
 
 Usage:
-  offload.py start   <run-dir> [--max-time 2h] [--wait 540 | --until-done]
-  offload.py wait    <run-dir> [--wait 540 | --until-done]
+  offload.py start   <run-dir> [--max-time <duration>] [--wait <seconds>]
+  offload.py wait    <run-dir> [--wait <seconds>]
 
-An agent runs `start <run-dir> --until-done` as a background shell and ends its
-turn: it is woken once, when the run ends, and pays nothing while qwen works.
+No time limit by default, on the run or on the wait: the run ends when qwen is
+done, and start/wait return when it has. --max-time (like 2h) and --wait (like
+540) are there only for when you want a limit.
+
+An agent runs `start <run-dir>` as a background shell and ends its turn: it is
+woken once, when the run ends, and pays nothing while qwen works.
   offload.py check   <run-dir>
   offload.py diff    <run-dir>
   offload.py restore <run-dir> [--all]
@@ -20,7 +24,7 @@ start    queues the run and returns, then waits like `wait`. One qwen run
          ~/.cache/dev-offload/. The snapshot is taken when the run's turn
          comes. A run has no time limit unless --max-time is given. The output goes to omp.log in the
          run folder.
-wait     waits up to --wait seconds. Prints STATUS: queued (with how many
+wait     waits until the run ends, or --wait seconds when given. Prints STATUS: queued (with how many
          runs are ahead), running, or the exit code, qwen's report, and the
          omp session to resume. Run it again while it is not done.
 queue    every run queued or running on this machine.
@@ -243,10 +247,10 @@ def cmd_queue(a):
 
 
 def cmd_wait(a):
-    """Wait up to --wait seconds, then print the exit code, the session and the report."""
+    """Wait until the run ends (or --wait seconds), then print the exit code, the session and the report."""
     run = pathlib.Path(a.run).resolve()
     done = run / "exit_code"
-    end = float("inf") if a.until_done else time.time() + a.wait
+    end = float("inf") if a.wait is None else time.time() + a.wait
     while time.time() < end and not done.exists():
         time.sleep(5)
     if not done.exists():
@@ -461,14 +465,12 @@ def main():
     s = sub.add_parser("start")
     s.add_argument("run")
     s.add_argument("--max-time", default=None, help="stop the run after this long, like 2h; none by default")
-    s.add_argument("--wait", type=int, default=540)
-    s.add_argument("--until-done", action="store_true",
-                   help="wait with no time limit, for a background shell that ends only when the run does")
+    s.add_argument("--wait", type=int, default=None, help="stop waiting after this many seconds; the run goes on. None by default")
+    s.add_argument("--until-done", action="store_true", help=argparse.SUPPRESS)  # the default now; kept so old calls work
     w = sub.add_parser("wait")
     w.add_argument("run")
-    w.add_argument("--wait", type=int, default=540)
-    w.add_argument("--until-done", action="store_true",
-                   help="wait with no time limit, for a background shell that ends only when the run does")
+    w.add_argument("--wait", type=int, default=None, help="stop waiting after this many seconds; the run goes on. None by default")
+    w.add_argument("--until-done", action="store_true", help=argparse.SUPPRESS)  # the default now; kept so old calls work
     for name in ("check", "diff"):
         sub.add_parser(name).add_argument("run")
     r = sub.add_parser("restore")

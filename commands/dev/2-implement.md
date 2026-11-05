@@ -25,7 +25,9 @@ You are the coordinator. The build runs in fresh `dev-implementer` agents. Two r
    - Check the plan with `python3 ~/.claude/scripts/dev/plan-status.py plan/<slug>/plan.md`. Trust its `done` and `left`, not the agent's report.
    - Check the change with `openspec status --change <slug> --json`, run in the repo that holds the plan. No change → the agent wrote code without a spec. Spawn a NEW `dev-implementer` on the same plan, and tell it to write the change before anything else. A plan with `Size: small` has no change on purpose: skip this check.
    - `done: true` → step 5.
-   - `done: false` and the agent did not report a blocker → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report `left`. In a split build this is per repo, as below.
+   - `done: false` and the agent did not report a blocker → spawn a NEW `dev-implementer` on the same plan. A fresh agent continues from the ticks. At most 3 rounds, then report `left`. In a split build this is per repo, as below. A `STATUS: partial` at the end of a phase is not a round: it is the implementer keeping its conversation short, so start the next one.
+   - An implementer stopped by a usage limit or an error → start a NEW one rather than resuming it. A resumed agent sends its whole old conversation again on every turn.
+   - Never let an implementer start helpers of its own unless `dev-implementer.md` allows it. It writes the reason under `## Progress` first. A plan with `Offload: local` gets one implementer per repo and no helpers at all.
    - `STATUS: blocked` → tell the user the blocker in one sentence, run `orca-card.py blocked`, and stop.
    - `STATUS: needs-db` → there is no local database for `DB`. Ask the user with AskUserQuestion what to do, never pick for them:
      - clone it from dev (Recommended): `localdb.py clone` reads dev once, then everything runs on the copy

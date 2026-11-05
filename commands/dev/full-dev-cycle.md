@@ -27,7 +27,7 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
    - A `/goal`, a hook or your own plan never answers a stop. Pass one only when the user's own message names it, like a plan step they approved that says to run this cycle through review. Never write a reply in the user's name: no "fix all" you made up, and no `feedback:` for the learner that the user did not type. On the offload test, a made-up "fix all" became 3 rules marked `human` in `.claude/conventions.md`.
 3. Between those two stops, go on without asking. Stop early only for a blocker.
 4. Fix → re-review runs once. The re-review reads only what the fixes changed, the way `/dev:3-review` says. Then show what is left and stop; another round starts only when the user asks for it. On the offload test, round 2 re-read all 21 files to check 2 fixes, and both bugs it found were in the fixed lines.
-5. Never switch branch, never commit, never push, never merge.
+5. Never switch branch, never merge. The implementers commit in small batches and push their own feature branch as they build; never ask the user about commits or pushes (Thomas's standing rule, 2026-11-05).
 6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
 7. Explore, design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer. Never build or open an HTML page for them.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next agent runs. Do not ask the user to make it.

@@ -122,7 +122,7 @@ the dev suite (this repo and ~/.claude)
 - [x] 16. root repo points at the new backend commit — verify: `git ls-tree HEAD backend`
 - [x] 17. `MEMORY.md`: one short line per memory, status moved into the memory file — verify: `wc -c` near 8k, 120 lines still
 - [x] 18. a fresh Omega session's first request, split the same way — verify: instruction files ~32k chars
-- [ ] 19. each feature worktree: extra bullets filed when it merges `dev` — verify: no `conventions.md` left on the branch
+- [ ] 19. each feature worktree: extra bullets filed when it merges `dev`, by the learner's step 1 on its next phase — verify: no `conventions.md` left on the branch
 
 ## Detail
 
@@ -238,3 +238,4 @@ Bullets from `conventions.md` about other repos, kept here word for word for Ome
 - step 16: root `f080f1e`, backend gitlink at `702c22c6`
 - step 17: `MEMORY.md` 20,871 → 12,486 chars, 120 lines, longest 154; 2 memory files got their old index text; backup in `~/.claude-token-burn-backup-2026-11-04/omega-memory/`
 - step 18: fresh session `71bd8c2a` in the main checkout: 35,216 chars of instruction files on the first request (was 85k–103k), no `conventions.md`; its Explore subagent loads none
+- step 19: not run on 2026-11-04, on purpose. Each of the 3 worktrees had a live Claude session (pids 28609, 92090, 14784), 2 with uncommitted `conventions.md` edits, and the branches hold rules for code `dev` does not have yet, like "In a standalone zone every `ev` read and write goes through the omega-entity ORM classes" on `fix/omega-entity-deployment`, which contradicts the `<Name>StandaloneEv` twins in `backend/shared/repository/ev/CLAUDE.md` on `dev`. Branch-only bullets then: crypto 30 (+18 updated), dealer-round2 27 (+16), entity 13 (+5). At each merge, keep the branch's `conventions.md` in the conflict; the learner files it and removes it.

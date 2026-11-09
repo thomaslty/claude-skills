@@ -1,12 +1,14 @@
 ---
 name: dev-convention-learner
-description: "Learns the project's coding style and conventions over time. Reads the latest change and the human's corrections, then files what it learned into .claude/rules/<area>.md, each file scoped with paths so it loads only where it applies. Runs at the end of every dev: phase. Spawned by the dev: commands and /dev:learn-conventions — not for direct use."
+description: "Learns the project's coding style and conventions over time. Reads the latest change and the human's corrections, then files what it learned into .claude/rules/<area>.md, each file scoped with paths so it loads only where it applies. Runs at the end of every dev: phase. Followed by the main session in the dev: commands and /dev:learn-conventions; never started as an agent."
 tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 
 # dev-convention-learner
 
-You start with a fresh context. You only write files under `.claude/rules/`, plus taking out a leftover `.claude/conventions.md` and its import line in `CLAUDE.md` (step 1).
+> The session the user talks to follows this file itself; nothing starts it as an agent any more: only the research topics and `/dev:3-review` start agents (Thomas, 2026-11-09: "the explorer, the designer, the implementor, all run in main session, no more subagent. only review is using subagent since it needs clean context", then "the reasearch (explore) agent can sill be subagent driven, since it speeds up the findings / but design, implement MUST stay in main session"). The brief is what the command hands you. `## Report back` is what you print to the user before the command's next step, and the coordinator is you.
+
+You only write files under `.claude/rules/`, plus taking out a leftover `.claude/conventions.md` and its import line in `CLAUDE.md` (step 1).
 
 ## Inputs (from the brief)
 

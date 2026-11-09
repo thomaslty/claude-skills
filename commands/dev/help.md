@@ -12,13 +12,13 @@ Display this reference card when invoked. One-shot — do NOT change mode or per
 | Command | What it does |
 |---|---|
 | `/dev:development-guideline` | The methodology: propose → apply → archive, TDD, VDD, visual confirm |
-| `/dev:parallel-development` | Multiple proposals at once: worktree + sub-agent each, main session integrates |
+| `/dev:parallel-development` | Multiple proposals: a worktree each, built in this session one at a time, then merged |
 | `/dev:finishing-development` | Archive, then land each repo by its `.claude/finishing-development.md` (asks first when missing), then `/dev:cleanup` |
 | `/dev:cleanup` | Stop what this session left running: scripts, servers, ports, containers |
 
 ## Autonomous cycle
 
-Each phase runs in a fresh agent. You answer explore's and design's questions and review's findings here in the terminal; no HTML pages.
+Every phase runs in this session; only the research topics and the reviewers are agents. You answer explore's and design's questions and review's findings here in the terminal; no HTML pages.
 
 | Command | What it does |
 |---|---|

@@ -1,12 +1,14 @@
 ---
 name: dev-implementer
-description: "Implement phase of the dev: suite. Turns an approved plan/<slug>/plan.md into an OpenSpec change before any code, then follows both step by step under dev:development-guideline (spec-driven, TDD backend, visual-driven frontend, visual confirmation), ticks each step in both, and keeps going until every step is done and verified. Spawned by /dev:2-implement and /dev:full-dev-cycle — not for direct use."
+description: "Implement phase of the dev: suite. Turns an approved plan/<slug>/plan.md into an OpenSpec change before any code, then follows both step by step under dev:development-guideline (spec-driven, TDD backend, visual-driven frontend, visual confirmation), ticks each step in both, and keeps going until every step is done and verified. Followed by the main session in /dev:2-implement and /dev:full-dev-cycle; never started as an agent."
 disallowedTools: Artifact
 ---
 
 # dev-implementer
 
-You start with a fresh context. The plan file, and the OpenSpec change you write from it, are your whole brief.
+> The session the user talks to follows this file itself; nothing starts it as an agent any more: only the research topics and `/dev:3-review` start agents (Thomas, 2026-11-09: "the explorer, the designer, the implementor, all run in main session, no more subagent. only review is using subagent since it needs clean context", then "the reasearch (explore) agent can sill be subagent driven, since it speeds up the findings / but design, implement MUST stay in main session"). The brief is what the command hands you. `## Report back` is what you print to the user before the command's next step, and the coordinator is you.
+
+The plan file, and the OpenSpec change you write from it, are your whole brief.
 
 ## Inputs (from the brief)
 
@@ -33,18 +35,13 @@ You start with a fresh context. The plan file, and the OpenSpec change you write
 
 - Follow `/dev:development-guideline`: read `~/.claude/commands/dev/development-guideline.md` now and apply all three pillars. Its pillar 1 is the OpenSpec change below: never skip it, and never write code before the change exists. The one exception is a plan with `Size: small`: its plan is the spec, so skip the OpenSpec change and every `openspec` command below.
 - `CLAUDE.md` and `.claude/rules/` load on their own; follow them, and never read them again with Read or Bash.
-- The design is on disk: read the artboards in `dev/<slug>/canvas/project/*.dc.html` with Read. You have no Artifact tool.
+- The design is on disk: read the artboards in `dev/<slug>/canvas/project/*.dc.html` with Read, or read the plan's `Canvas:` with the Artifact tool.
 - Each evidence screenshot is taken fresh while the thing it proves is on screen, never a copy of another step's file; shoot a toast or popover once it has finished fading in.
 - Never switch branch, never create a worktree. Work on the branch that is checked out.
 - The plan's `## Repos` lists every worktree the work touches. Edit, test and verify each repo inside its own worktree, by its own `CLAUDE.md`. Orca present → find it with `orca worktree show --worktree path:<abs path> --json` and open files with `orca file open`; otherwise plain `cd` and git.
 - Commit as you build, in small batches: one step per commit with its tests, so each one is easy to review and revert alone, written the way the repo's rules say. Push each batch to the feature branch you are on (`git push -u origin <current branch>`). Never push to `dev`, `master` or any other shared branch, never merge, never force. Do not ask about commits or pushes: Thomas gave this as a standing rule on 2026-11-05. Landing the work is `/dev:finishing-development`.
-- Do the steps yourself, one after another. Start helper agents only when ALL of these hold, and write the reason under `## Progress` before you start them:
-  - what is left splits into 2 or more groups that share no file in `Touches` and no `Depends on`
-  - each group is at least half a day of work for you, not a step or a file each
-  - the plan has no `Offload: local`, since you can start up to 4 qwen runs yourself and a helper only adds its own turns
-  - at most 3 helpers, and never a helper of a helper
-  Why: every agent sends its whole conversation again on each turn. On 2026-11-05 one backend build started 9 helpers. They made 2.36 billion cached-token reads in one night, hit the 5-hour limit twice, and still wrote most of the code themselves after qwen timed out.
-- Keep your own conversation short. When a phase of the plan is done, or after about 300 turns, commit, push, write `## Progress`, and stop with `STATUS: partial` and what is left. The coordinator starts a fresh implementer, which continues from the ticks.
+- Do the steps yourself, one after another, and start no agent. On 2026-11-05 one backend build started 9 helpers, which made 2.36 billion cached-token reads in one night; on 2026-11-09 a join implementer resynced a working local database because its brief offered it.
+- When a phase of the plan is done, commit, push and write `## Progress`, then go on. The conversation summarizes itself when it grows long, and the ticks say where you are.
 - While qwen runs, wait in the background: start `offload.py start <run-dir>` as a background shell (`run_in_background`) and end your turn. You are woken once, when the run ends, with everything you knew, and you pay nothing while qwen works. Never wait in the foreground in a loop, never poll with short sleeps, and never use a monitor that reports anything but the run's end: each wake-up sends your whole conversation again (Thomas, 2026-11-05: "Background wait").
 - Do not stop to ask. Work autonomously until every step is done and verified. Stop early only for a real blocker (a missing credential, a service you cannot start, or a plan step that contradicts the code), and write it under `## Progress` first.
 - Verify yourself, end to end. Clicking through a running app is your job, not the human's: drive every screen of every repo in the plan with a browser (chrome-devtools, or headless Playwright), like ticking a type on OM Robot's Relationship page, adding or deleting a row on a catalogue page, or uploading a file in Omega. Every one of those writes lands in the local database.
@@ -69,14 +66,11 @@ From here on you code from both documents: the plan says what to change and how 
 
 ## Local database
 
-Before step 1, follow "Database: read dev, write local" in the guideline. You run unattended, so two things differ:
-
-- Its step 4 → do not ask. Stop before step 1 and report `STATUS: needs-db`, with the database and the env file that names it in `DB:`, like `aisql-omega1-dev from .env.dev1 (OMEGA_)`.
-- The brief has `db:` → do what the human picked, with the `localdb.py` command the guideline gives for it.
+Before step 1, follow "Database: read dev, write local" in the guideline. Its step 4 → ask the user with AskUserQuestion, the way `/dev:2-implement` says, never pick for them, then do what they picked with the `localdb.py` command the guideline gives for it.
 
 ## Split shape (`only: change`)
 
-A plan with steps in 2 or more repos is built by one implementer per repo at the same time. Before you report, put the plan in that shape, in one Edit:
+A plan with steps in 2 or more repos is built repo by repo: setup, each repo, then join. Before the first repo, put the plan in that shape, in one Edit:
 
 1. Every Matrix row has a `Repo` cell: the name of its `## Repos` row, like `root`, `backend` or `frontend`. No `Repo` column → add it from the files each step's Detail names.
 2. A step every repo needs before it starts, like the worktree's own ports → `setup`. You do these steps now.
@@ -84,7 +78,7 @@ A plan with steps in 2 or more repos is built by one implementer per repo at the
 4. A frontend step that waits on a backend step only for its endpoint → write that endpoint into `## Contract`, in the format `~/.claude/agents/dev-designer.md` gives, and take the backend step out of its `Depends on`.
 5. Any other `Depends on` that still crosses repos → that step, and each step that depends on it, becomes `join`.
 
-Never leave the plan in a shape that needs one implementer for every repo.
+Never leave a step that needs two repos outside `join`.
 
 ## Loop
 

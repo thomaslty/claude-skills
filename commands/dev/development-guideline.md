@@ -43,7 +43,7 @@ No code before a proposal. The lifecycle is **propose → apply → archive**:
 2. **Apply** — implement with `opsx:apply`.
 3. **Archive** — once the change is fully implemented and visually confirmed, finalize it with `opsx:archive` (or `openspec-archive-change`) to fold its specs into the baseline and move the change out of the active set.
 
-In the `dev:` suite you keep two documents and code from both: `plan/<slug>/plan.md`, the `/show-plan` view written down by `/dev:1-design`, and the OpenSpec change `dev-implementer` writes from it in `openspec/changes/<slug>/` before any code. The plan being approved does not replace the change.
+In the `dev:` suite you keep two documents and code from both: `plan/<slug>/plan.md`, the `/show-plan` view written down by `/dev:1-design`, and the OpenSpec change `/dev:2-implement` writes from it in `openspec/changes/<slug>/` before any code. The plan being approved does not replace the change.
 
 The one exception is a plan with `Size: small`: one repo, no database change, no outside API, no new web screen and nothing on `.claude/risky.md`. Its plan is the spec, and no OpenSpec change is written. On the offload test, the change for a Snake game was 20.6 KB that only repeated the plan.
 

@@ -6,7 +6,7 @@ argument-hint: "[plan/<slug>/plan.md] [--base <ref>]"
 
 # 3 — Review
 
-You are the coordinator. The review runs in fresh `dev-reviewer` agents. Nothing is changed until the user replies.
+The review runs in fresh `dev-reviewer` agents, since a reviewer needs a context that did not write the code; only the research topics and `/dev:3-review` start agents (Thomas, 2026-11-09: "the explorer, the designer, the implementor, all run in main session, no more subagent. only review is using subagent since it needs clean context", then "the reasearch (explore) agent can sill be subagent driven, since it speeds up the findings / but design, implement MUST stay in main session"). Nothing is changed until the user replies.
 
 Review talks to the user in the terminal only. No HTML page, no JSON to copy.
 
@@ -37,11 +37,11 @@ python3 ~/.claude/scripts/dev/review-findings.py --plan plan/<slug>/plan.md dev/
 8. Print `dev/<slug>/review/findings.md` in the terminal as it is, as soon as it is ready: the count by lens, then every finding with its `Where`, root cause, impact and fix. Never cut it to titles. Open no file or diff tabs; the `Where` path is the link. Never wait for qwen's pre-pass: its items follow before the user replies, the way the offload skill says.
 9. Run `orca-card.py waiting-review`. End with one line, like: "Reply here, like `fix all` or `sec-1 fix, cor-2 skip: we only log ids`." Stop and wait.
 10. The user's reply is the answer, typed by the user. A `/goal` or your own plan is never a reply, the way rule 2 in `~/.claude/commands/dev/full-dev-cycle.md` says. A finding it does not mention → ask about just those, in one line. Then:
-    - Spawn `dev-convention-learner` at `effort: low` with `phase: review`, `plan`, and `feedback: <the reply verbatim>`. Skipped findings and comments are the strongest signal of what this project does not care about. Inside `/dev:full-dev-cycle`, skip this: the cycle runs one learner at the end.
+    - Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: review`, `plan`, and `feedback: <the reply verbatim>`. Skipped findings and comments are the strongest signal of what this project does not care about. Inside `/dev:full-dev-cycle`, skip this: the cycle learns once at the end.
     - Append a `## Review` section to the plan listing each finding id, its choice, and the comment.
     - If any finding is to be fixed, or the reply asks for something else:
       - snapshot each repo the fixes touch, so the re-review can read only what they change: `python3 ~/.claude/scripts/dev/changes.py snapshot dev/<slug>/review/fix-<round>/<repo> --root <that repo's worktree>`
-      - run `orca-card.py fixing`, then fix them the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. Findings in 2 or more repos get one `dev-implementer` per repo at the same time. With `Offload: local` there is no implementer: you fix them yourself. The reply is the go-ahead for these fixes.
+      - run `orca-card.py fixing`, then fix them yourself, in this session, the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. The reply is the go-ahead for these fixes.
       - then the re-review (below).
 
 ## Re-review

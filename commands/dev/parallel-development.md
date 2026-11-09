@@ -1,15 +1,15 @@
 ---
 name: parallel-development
-description: "Use when more than one proposal/change will be created or implemented in the same session, or when several independent changes can be built at once. Coordinates authoring all proposals from the main session, then executing each in its own git worktree via parallel sub-agents that commit but never merge, with the main session merging and cleaning up."
+description: "Use when more than one proposal/change will be created or implemented in the same session, or when several independent changes can be built at once. Coordinates authoring all proposals from the main session, then building each in its own git worktree, one after the other, in the main session, which then merges and cleans up."
 ---
 
 # Parallel Development
 
 ## Overview
 
-When a session involves more than one proposal, the main session keeps the context and orchestrates; the work fans out into one git worktree + one sub-agent per proposal, then folds back in.
+When a session involves more than one proposal, each gets its own git worktree, so their changes never mix, and the main session builds them one after the other, then folds them back in. No sub-agent builds: only the research topics and `/dev:3-review` start agents (Thomas, 2026-11-09: "the explorer, the designer, the implementor, all run in main session, no more subagent. only review is using subagent since it needs clean context", then "the reasearch (explore) agent can sill be subagent driven, since it speeds up the findings / but design, implement MUST stay in main session").
 
-**Core principle:** the main session authors and integrates; sub-agents implement in isolation. Sub-agents commit, never merge. Only the main session merges and cleans up.
+**Core principle:** the main session authors, builds each worktree in turn, commits on each worktree's branch, and only then merges and cleans up.
 
 ## When to Use
 
@@ -28,11 +28,11 @@ When a session involves more than one proposal, the main session keeps the conte
 digraph parallel_decision {
   "Multiple proposals?" [shape=diamond];
   "Independent? (no shared files / no ordering)" [shape=diamond];
-  "Parallel: worktree + sub-agent each" [shape=box];
+  "Worktree each, built in turn" [shape=box];
   "Sequential: one at a time" [shape=box];
   "Multiple proposals?" -> "Independent? (no shared files / no ordering)" [label="yes"];
   "Multiple proposals?" -> "Sequential: one at a time" [label="no"];
-  "Independent? (no shared files / no ordering)" -> "Parallel: worktree + sub-agent each" [label="yes"];
+  "Independent? (no shared files / no ordering)" -> "Worktree each, built in turn" [label="yes"];
   "Independent? (no shared files / no ordering)" -> "Sequential: one at a time" [label="no"];
 }
 ```
@@ -41,7 +41,7 @@ digraph parallel_decision {
 
 ### Phase 1 — Author ALL proposals in the main session
 
-The main session holds the conversation context, so it creates every proposal and its complete artifacts (proposal, design, specs, tasks) itself — do NOT delegate proposal authoring to sub-agents. Use `opsx:propose` per change.
+The main session creates every proposal and its complete artifacts (proposal, design, specs, tasks) itself. Use `opsx:propose` per change.
 
 ### Phase 2 — One worktree per proposal
 
@@ -49,28 +49,25 @@ The main session holds the conversation context, so it creates every proposal an
 
 Create one worktree per proposal under `./.worktree/<change-id>` (or `./.claude/.worktree/<change-id>`), each on its own branch off the current working branch.
 
-### Phase 3 — One sub-agent per worktree (parallel)
+### Phase 3 — Build each worktree in turn
 
-**REQUIRED SUB-SKILL:** Use superpowers:dispatching-parallel-agents.
+The main session builds one worktree, then the next. In each one it:
 
-Dispatch one sub-agent per worktree, in a single message so they run concurrently. Each sub-agent:
-
-- Uses the SAME model as the main session, and the effort `## Effort` in `~/.claude/commands/dev/full-dev-cycle.md` gives a `dev-implementer`: high, or xhigh when its proposal touches anything on `.claude/risky.md`.
-- Works only inside its assigned worktree.
+- Works only inside that worktree.
 - Implements its proposal following `dev:development-guideline` (backend TDD, frontend VDD, visual confirmation).
-- Commits all its changes on its worktree branch.
-- Does NOT merge and does NOT touch other worktrees.
+- Commits all its changes on that worktree's branch.
+- Does NOT merge yet.
 
 ### Phase 4 — Main session integrates and cleans up
 
-After all sub-agents report done, the main session:
+After every worktree is built, the main session:
 
 1. Merges each worktree branch back into the current working branch.
 2. Resolves any conflicts (the main session has the full context).
 3. Archives each merged change with `opsx:archive` (or `openspec-archive-change`), one at a time.
 4. Removes each worktree and its branch after a successful merge (`git worktree remove`).
 
-Sub-agents NEVER merge and NEVER archive — archiving touches the shared spec baseline, so doing it in parallel worktrees would conflict. Merge, archive, and cleanup all happen in the main session, sequentially, only after the merge succeeds.
+Never merge or archive inside a worktree — archiving touches the shared spec baseline. Merge, archive, and cleanup happen one change at a time, only after the merge succeeds.
 
 ## Quick Reference
 
@@ -78,15 +75,14 @@ Sub-agents NEVER merge and NEVER archive — archiving touches the shared spec b
 |---|---|---|
 | Author proposals | Main | Create all artifacts |
 | Create worktrees | Main | One per proposal |
-| Implement | Sub-agents | Parallel, in worktree |
-| Commit | Sub-agents | On worktree branch |
+| Implement | Main | One worktree at a time |
+| Commit | Main | On worktree branch |
 | Merge | Main | Into working branch |
 | Archive | Main | `opsx:archive` each change |
 | Cleanup | Main | Remove worktrees |
 
 ## Cross-References
 
-- Methodology each sub-agent follows → `dev:development-guideline`
+- Methodology each build follows → `dev:development-guideline`
 - Worktree mechanics → superpowers:using-git-worktrees
-- Parallel dispatch → superpowers:dispatching-parallel-agents
 - Proposals → `opsx:propose`; implementing tasks → `opsx:apply`; archiving → `opsx:archive`

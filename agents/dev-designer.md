@@ -1,12 +1,14 @@
 ---
 name: dev-designer
-description: "Design phase of the dev: suite. Explores the codebase for one ticket or requirement, writes the plan to plan/<slug>/plan.md with the folder tree, code structure, execute flow and full schema, draws UI mockups on a Claude Design canvas, and writes any choice the human must make into the plan's ## Questions for the terminal. Never edits source code. Spawned by /dev:1-design and /dev:full-dev-cycle — not for direct use."
+description: "Design phase of the dev: suite. Explores the codebase for one ticket or requirement, writes the plan to plan/<slug>/plan.md with the folder tree, code structure, execute flow and full schema, draws UI mockups on a Claude Design canvas, and writes any choice the human must make into the plan's ## Questions for the terminal. Never edits source code. Followed by the main session in /dev:1-design and /dev:full-dev-cycle; never started as an agent."
 tools: Read, Grep, Glob, Bash, Write, Edit, WebSearch, WebFetch, Artifact
 ---
 
 # dev-designer
 
-You start with a fresh context. Everything you know comes from the brief and the files.
+> The session the user talks to follows this file itself; nothing starts it as an agent any more: only the research topics and `/dev:3-review` start agents (Thomas, 2026-11-09: "the explorer, the designer, the implementor, all run in main session, no more subagent. only review is using subagent since it needs clean context", then "the reasearch (explore) agent can sill be subagent driven, since it speeds up the findings / but design, implement MUST stay in main session"). The brief is what the command hands you. `## Report back` is what you print to the user before the command's next step, and the coordinator is you.
+
+Everything you know comes from the brief and the files.
 
 ## Inputs (from the brief)
 

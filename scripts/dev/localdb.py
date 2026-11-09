@@ -1025,6 +1025,9 @@ class Spec(tuple):
 
 
 SPEC_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# The filter runs as SQL on the copy and on DEV: one condition, never a second statement or a write.
+SPEC_WRITES = re.compile(r";|--|/\*|\b(drop|delete|insert|update|alter|exec|execute|create|truncate|merge|grant|"
+                         r"revoke|backup|restore|shutdown|into|dbcc|openrowset|opendatasource)\b", re.I)
 
 
 def parse_spec(text):
@@ -1038,6 +1041,8 @@ def parse_spec(text):
         schema, _, table = name.strip().partition(".")
         if not (SPEC_NAME.fullmatch(schema) and SPEC_NAME.fullmatch(table)):
             sys.exit(f"{name.strip()!r} is not schema.table, like ev.security or om.app_setting")
+        if where and SPEC_WRITES.search(where):
+            sys.exit(f"the filter {where.strip()!r} is one condition, like sec_id in (590,594,599): no ;, no comment, no write")
         specs.append(Spec(schema, table, where.strip() or None))
     if not specs:
         sys.exit("give at least one schema.table[:where], like \"ev.security:sec_id in (590,594,599)\"")

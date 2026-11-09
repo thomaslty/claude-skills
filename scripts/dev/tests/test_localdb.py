@@ -611,3 +611,12 @@ def test_copy_rows_leaves_other_tables(guarded, tmp_path):
     assert on_guard(GUARD_COPY, "SELECT version_num FROM om.alembic_version") == revision
     code, output = toolkit("check", GUARD_COPY, "--from", env, "--need", "om.reason_code:code in (40,41)")
     assert code == 0 and "local 2 · DEV 2 · missing 0" in output, output
+
+
+def test_spec_refuses_a_filter_that_writes():
+    # The filter runs as SQL on the copy and on DEV: never a second statement or a write.
+    for text in ("ev.security:1=1; DROP TABLE ev.security", "om.app_setting:[key] IN (SELECT 1) OR 1=1 --",
+                 "ev.security:sec_id = 1 delete from ev.security", "om.tenant:exec('x')"):
+        with pytest.raises(SystemExit):
+            localdb.parse_spec(text)
+    assert localdb.parse_spec("om.app_setting:[key] = N'LAKEHOUSE_SQL_DATABASE'")[0].where == "[key] = N'LAKEHOUSE_SQL_DATABASE'"

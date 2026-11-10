@@ -246,3 +246,15 @@ def test_lines_of_statements_are_not_a_flow_diagram():
     start = NEW.index("```", NEW.index("### Data flow"))
     end = NEW.index("```", start + 3) + 3
     assert ("*", "missing-data-flow", "fix") in rules(NEW[:start] + statements + NEW[end:])
+
+
+def test_an_existing_table_shown_by_its_new_column_needs_no_audit_columns():
+    text = """## Schema
+
+### om.validation_contribution_request (one new column)
+
+| Column | Type | Null | Key | Row 1 | Row 2 |
+|---|---|---|---|---|---|
+| `workflow_id` | BIGINT | yes | FK om.workflow | 2 | 3 |
+"""
+    assert "missing-audit" not in [f[1] for f in rules(text)]

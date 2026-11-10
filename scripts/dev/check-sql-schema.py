@@ -38,6 +38,9 @@ RANGE_CHECK = re.compile(r"check[^,]*?(?:[<>=]|\bbetween\b|\blike\b|\blen\b)")
 
 SECTION = re.compile(r"^## (?P<name>[^\n]+?)\s*$(?P<body>.*?)(?=^## |\Z)", re.M | re.S)
 TABLE_HEAD = re.compile(r"^(?:#{3,6}\s+|\*\*)`?(?P<name>\w+\.\w+)`?")
+# A heading like "### om.request (one new column)" shows only what changes on an existing table.
+PARTIAL = re.compile(r"\b(new columns?|changed)\b", re.I)
+partial = set()
 
 
 def cells(line):
@@ -47,11 +50,14 @@ def cells(line):
 def parse_tables(schema):
     """Each table heading in ## Schema with the rows of the first `| Column |` table under it."""
     tables, current, lines = {}, None, schema.splitlines()
+    partial.clear()
     i = 0
     while i < len(lines):
         head = TABLE_HEAD.match(lines[i].strip())
         if head:
             current = head.group("name")
+            if PARTIAL.search(lines[i]):
+                partial.add(current)
         elif current and lines[i].strip().startswith("|") and cells(lines[i])[0].lower() == "column":
             header = [c.lower() for c in cells(lines[i])]
             rows = []
@@ -115,7 +121,7 @@ def check_table(table, rows, audit):
                                  f"updated is the end"))
     # A reference table is seeded by its migration, so it carries created_time only.
     reference = any(r.get("column") == "code" and "pk" in r.get("key", "").lower() for r in rows)
-    for required in audit[1:2] if reference else audit[:2]:
+    for required in [] if table in partial else audit[1:2] if reference else audit[:2]:
         if required not in names:
             found.append(finding(table, required, "missing-audit", "fix",
                                  f"every table has {audit[0]} and {audit[1]}"))

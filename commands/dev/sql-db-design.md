@@ -50,7 +50,8 @@ It prints `{"tables": 4, "approval": "asked", "findings": [...]}`.
 - Never store what other rows already say, like a `current_step` the step rows hold, or a `completed_time` that is `updated_time` once the status closes.
 - A status column holds one state. A result that is only the step plus its state is not a column, like `outcome = booked` for `deposit_received` · `done`.
 - Never hardcode values in the database: no CHECK with a list of values, no enum. Every set of codes is a reference table with a foreign key, like `om.workflow_request_type`, `om.workflow_code` and a status's own table, and the same migration seeds its rows. The repo already does it, like `module_code` → `om.module.code` and `reason_code` → `om.validation_redemption_reason_code.code`. A new value is then one insert, and a value still in use cannot be deleted ([SQLServerCentral](https://www.sqlservercentral.com/forums/topic/fk-vs-check-constraint-for-lookupreference-tables/page/2)).
-- A reference table holds `code` as its primary key, `name` for the label, and the audit columns.
+- A reference table copies the repo's own, like `om.validation_redemption_reason_code`: `code` as its primary key, `label_en`, `label_fr` and `created_time`, and no `created_by`, since the migration seeds it.
+- A link into `ev` has no foreign key: no migration creates `ev` tables, Omega.Sync does, and only in a standalone zone, like `tns_id` in `workflow_deposit`. The bullet under the table says so.
 - A CHECK is only a rule on one value, like `amount > 0`.
 
 ## Links

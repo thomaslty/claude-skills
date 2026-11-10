@@ -102,7 +102,9 @@ def check_table(table, rows, audit):
             found.append(finding(table, name, "time-name", "fix",
                                  f"the repo's audit columns are {', '.join(audit)}: created is the start, "
                                  f"updated is the end"))
-    for required in audit[:2]:
+    # A reference table is seeded by its migration, so it carries created_time only.
+    reference = any(r.get("column") == "code" and "pk" in r.get("key", "").lower() for r in rows)
+    for required in audit[1:2] if reference else audit[:2]:
         if required not in names:
             found.append(finding(table, required, "missing-audit", "fix",
                                  f"every table has {audit[0]} and {audit[1]}"))

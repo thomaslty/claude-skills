@@ -83,8 +83,9 @@ Approved: 2026-11-10, "yes to all"
 | Column | Type | Null | Key | Row 1 | Row 2 |
 |---|---|---|---|---|---|
 | `code` | NVARCHAR(20) | no | PK | current | done |
-| `name` | NVARCHAR(100) | no | | Current | Done |
-{AUDIT}
+| `label_en` | NVARCHAR(100) | no | | Current | Done |
+| `label_fr` | NVARCHAR(100) | no | | En cours | Terminée |
+| `created_time` | DATETIME2 | no | getutcdate() | 2026-11-10 09:00 | 2026-11-10 09:00 |
 
 **om.workflow_order**
 
@@ -189,3 +190,9 @@ def test_a_code_column_with_no_reference_table_is_a_fix():
     assert ("status", "code-without-reference", "fix") in rules(plain)
     referenced = plain.replace("| `status` | NVARCHAR(20) | no | |", "| `status` | NVARCHAR(20) | no | FK om.workflow_status |")
     assert "code-without-reference" not in [f[1] for f in rules(referenced) if f[0] == "status"]
+
+
+def test_a_reference_table_needs_created_time_but_not_created_by():
+    found = rules(NEW.replace("| `created_time` | DATETIME2 | no | getutcdate() | 2026-11-10 09:00 | 2026-11-10 09:00 |\n", ""))
+    assert ("created_time", "missing-audit", "fix") in found
+    assert ("created_by", "missing-audit", "fix") not in found

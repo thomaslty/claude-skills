@@ -248,7 +248,7 @@ When the plan adds or changes a table, follow `~/.claude/commands/dev/sql-db-des
 Show the whole structure, never a summary:
 
 1. An ASCII picture of the tables and how they join, with the join column on each edge, in a plain fenced code block.
-2. The purpose table and the `### Row flow`, exactly as "Explain it" in `sql-db-design.md` says: what each table holds, the question it answers, when it is written and who reads it, then one real request walked through every event and every row it writes. Both come before any column.
+2. The purpose table and the `### Data flow` diagram, exactly as "Explain it" in `sql-db-design.md` says: what each table holds, the question it answers, when it is written and who reads it, then boxes, tables and labeled arrows for one real request and its branches. Both come before any column.
 3. One markdown table per table, every column, nothing cut, with 1 or 2 columns of dummy rows so the human sees what is stored:
 
 | Column | Type | Null | Key | Row 1 | Row 2 |

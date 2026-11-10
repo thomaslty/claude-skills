@@ -72,12 +72,13 @@ Approved: 2026-11-10, "yes to all"
 | `om.workflow_step_status` | the valid step states | Which states exist? | migration seed | foreign keys |
 | `om.workflow_order` | each buy order placed | Which orders are C-14's? | Confirm deposit | step 6 check |
 
-### Row flow
+### Data flow
 
 ```
-2 Dealer clicks Confirm deposit   POST /api/dealer/workflow/contribution/14/deposit-received
-   om.workflow_step    UPDATE  deposit_received  current -> done
-   om.workflow_order   INSERT  workflow 2 -> order 1, weight 40
+┌─────────────────────────┐
+│ Dealer confirms deposit ├─┬─ INSERT 2 links ────► (workflow_order)
+│ POST …/deposit-received │ └─ UPDATE, INSERT 3 ──► (workflow_step)
+└─────────────────────────┘
 ```
 
 ### om.workflow_step — one row per step, per attempt
@@ -231,6 +232,17 @@ def test_a_seeded_rows_table_is_not_a_purpose_table():
     assert len([f for f in schema.check(text)["findings"] if f["rule"] == "missing-purpose"]) == 3
 
 
-def test_a_schema_with_no_row_flow_is_a_fix():
-    text = NEW.replace("### Row flow", "### Notes")
-    assert ("*", "missing-row-flow", "fix") in rules(text)
+def test_a_schema_with_no_data_flow_heading_is_a_fix():
+    text = NEW.replace("### Data flow", "### Notes")
+    assert ("*", "missing-data-flow", "fix") in rules(text)
+
+
+def test_lines_of_statements_are_not_a_flow_diagram():
+    statements = """```
+2 Dealer clicks Confirm deposit   POST /api/dealer/workflow/contribution/14/deposit-received
+   om.workflow_step    UPDATE  deposit_received  current -> done
+   om.workflow_order   INSERT  workflow 2 -> order 1, weight 40
+```"""
+    start = NEW.index("```", NEW.index("### Data flow"))
+    end = NEW.index("```", start + 3) + 3
+    assert ("*", "missing-data-flow", "fix") in rules(NEW[:start] + statements + NEW[end:])

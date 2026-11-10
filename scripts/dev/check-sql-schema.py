@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the ## Schema of a plan/<slug>/plan.md against /dev:sql-db-design, instead of by eye.
 Rules: kind, abbreviation, vague-name, json, time-name, missing-audit, hardcoded-values,
-code-without-reference, polymorphic, dual-purpose, missing-purpose, missing-row-flow, approval.
+code-without-reference, polymorphic, dual-purpose, missing-purpose, missing-data-flow, approval.
 
 Usage: check-sql-schema.py <plan/<slug>/plan.md> [--audit created_by,created_time,updated_by,updated_time]
 
@@ -31,7 +31,8 @@ ABBREVIATIONS = {"tns": "transaction", "txn": "transaction", "tty": "transaction
                  "prt": "portfolio", "usr": "user", "upd": "updated", "amt": "amount", "qty": "quantity",
                  "cur": "currency", "acct": "account", "desc": "description", "cnt": "count"}
 PURPOSE_WORDS = ("purpose", "answers", "holds", "responsible")
-ROW_FLOW = re.compile(r"^(?:#{3,6}\s+|\*\*)row flow", re.I | re.M)
+DATA_FLOW = re.compile(r"^(?:#{3,6}\s+|\*\*)data flow[^\n]*\n(?P<rest>.*)", re.I | re.M | re.S)
+FENCE = re.compile(r"```[^\n]*\n(?P<block>.*?)```", re.S)
 # A CHECK on one value's range, like `CHECK > 0`, is fine; a CHECK on its own holds a list of values.
 RANGE_CHECK = re.compile(r"check[^,]*?(?:[<>=]|\bbetween\b|\blike\b|\blen\b)")
 
@@ -164,11 +165,19 @@ def check_explained(schema, tables):
             found.append(finding(name, "*", "missing-purpose", "fix",
                                  "the purpose table has no row for it: what it holds, the question it answers, "
                                  "when it is written and who reads it"))
-    if tables and not ROW_FLOW.search(schema):
-        found.append(finding("*", "*", "missing-row-flow", "fix",
-                             "no `### Row flow`: walk one real request through every event, and show which row "
-                             "each table gains or changes"))
+    if tables and not has_flow_diagram(schema):
+        found.append(finding("*", "*", "missing-data-flow", "fix",
+                             "no `### Data flow` diagram: a box for each actor and route, `(table)` for each table, "
+                             "and a labeled arrow for each write; lines of statements are not a diagram"))
     return found
+
+
+def has_flow_diagram(schema):
+    """A fenced block under `### Data flow` that draws boxes, tables and arrows."""
+    heading = DATA_FLOW.search(schema)
+    fence = FENCE.search(heading.group("rest")) if heading else None
+    block = fence.group("block") if fence else ""
+    return "┌" in block and "(" in block and any(a in block for a in "►▼◄▲")
 
 
 def approval(schema, questions, tables):

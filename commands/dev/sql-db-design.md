@@ -1,6 +1,6 @@
 ---
 name: sql-db-design
-description: "The rules for every table you add or change, and the checker that holds a plan to them: each table's purpose and one real request walked through every table before any column, full words never EV's short names, the repo's own audit names, no `kind`, no vague names like outcome or detail, no JSON for data, no hardcoded values (every set of codes is a reference table), nothing stored twice, real foreign keys, one link table per parent, and every schema change asked as a question until the plan's ## Schema says Approved. /dev:1-design runs it on every plan with a ## Schema. Triggers on /dev:sql-db-design, 'check the schema', 'design the tables', 'review this table design'. Changes no file."
+description: "The rules for every table you add or change, and the checker that holds a plan to them: each table's purpose and a data flow diagram of one real request before any column, full words never EV's short names, the repo's own audit names, no `kind`, no vague names like outcome or detail, no JSON for data, no hardcoded values (every set of codes is a reference table), nothing stored twice, real foreign keys, one link table per parent, and every schema change asked as a question until the plan's ## Schema says Approved. /dev:1-design runs it on every plan with a ## Schema. Triggers on /dev:sql-db-design, 'check the schema', 'design the tables', 'review this table design'. Changes no file."
 argument-hint: "[plan/<slug>/plan.md]"
 ---
 
@@ -40,19 +40,27 @@ Columns mean nothing until the human knows what each table is for and how a requ
 |---|---|---|---|---|
 | `om.workflow` | one row per request | Is C-14 still open? | submit, close | the list's Step |
 
-3. `### Row flow`: one real request walked through every event, in order. Each event says who does what through which endpoint, then every row each table gains or changes, with real values, like:
+3. `### Data flow`: a real flow diagram, never lines of statements. A box for each actor and the route it calls, `(table)` for each table, an arrow down from one event to the next, `◇` for a decision, `◉` for an end, and a labeled arrow from the box to each table it writes or reads, like:
 
 ```
-② Dealer clicks Confirm deposit    POST /api/dealer/workflow/contribution/14/deposit-received
-   ev.transactions       INSERT  10701 · CRD · 6,000.00
-   om.workflow_deposit   INSERT  workflow 2 → transaction 10701
-   om.workflow_step      UPDATE  deposit_received   current → done
+┌─────────────────────────┐
+│ Dealer confirms deposit ├─┬─ INSERT CRD 6,000 ──► (ev.transactions)
+│ POST …/deposit-received │ ├─ INSERT 1 link ─────► (workflow_deposit)
+└────────────┬────────────┘ ├─ INSERT 2 orders ───► (ev.dealer_order)
+             │              ├─ INSERT 2 links ────► (workflow_order)
+             │              └─ UPDATE, INSERT 3 ──► (workflow_step)
+             ▼
+┌─────────────────────────┐
+│ Blotter contracts       ├─── UPDATE RVW → CON ──► (ev.dealer_order)
+│ approve, after-NAV run  │
+└─────────────────────────┘
 ```
 
-   Then each branch the same way, like a compliance fail, a modify and a cancel.
+   - one diagram for the main path with one real request, like C-14, and one for the branches, like a compliance fail and each way out of it
+   - count the columns so every arrow lands on its box, and keep it under 90 columns
 4. Then the column tables.
 
-The checker refuses a schema with a table missing from the purpose table, or with no `### Row flow`.
+The checker refuses a schema with a table missing from the purpose table, or with no `### Data flow` diagram of boxes, tables and arrows.
 
 ## Names
 
@@ -86,4 +94,4 @@ The checker refuses a schema with a table missing from the purpose table, or wit
 - One link table per thing you link to, never one table with a type column and two nullable ids, like `workflow_deposit` with `transaction_id` and `workflow_order` with `dealer_order_id`, not one `workflow_booking` with `kind` ([dual-purpose foreign key](https://www.educative.io/courses/sql-antipatterns-database-programming/antipattern-use-dual-purpose-foreign-key)).
 - A column is NOT NULL unless a real row leaves it empty, and the bullet under its table names that row, like "`model_weight`: NULL on Funds indicated".
 
-(Origin: 2026-11-10, the contribution workflow plan decided 3 tables itself, with `request_kind`, `outcome`, a JSON `detail`, `started_time` and a `kind` booking table — "you never show me the database schema nor ask my opinion about that", then "don't fucking jam everyting as json, this is bad design in sql database", then "I FUCKING HATE YOU USE HARDCODED VALUE IN DB, USE REFERENCE TABLE", then "tns_id -> transaction_id (always full name in omega, ignore the ev bad convention)" and "where is my flow diagram? ... what is the purpose of each table, what does it do? what does it responsible for? none".)
+(Origin: 2026-11-10, the contribution workflow plan decided 3 tables itself, with `request_kind`, `outcome`, a JSON `detail`, `started_time` and a `kind` booking table — "you never show me the database schema nor ask my opinion about that", then "don't fucking jam everyting as json, this is bad design in sql database", then "I FUCKING HATE YOU USE HARDCODED VALUE IN DB, USE REFERENCE TABLE", then "tns_id -> transaction_id (always full name in omega, ignore the ev bad convention)" and "where is my flow diagram? ... what is the purpose of each table, what does it do? what does it responsible for? none", then, over a list of INSERT and UPDATE lines, "you flow diagram is not what I want, do you know what is a flow diagram? ... you fucking giving me slop text".)

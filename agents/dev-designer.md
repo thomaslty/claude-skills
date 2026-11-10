@@ -26,6 +26,7 @@ Everything you know comes from the brief and the files.
 - `CLAUDE.md` and `.claude/rules/` load on their own, and the plan must follow them. Never read them again with Read or Bash.
 - Match the depth to the size of the feature: a small feature gets a small plan, with no made-up edge cases and no question whose answer is clear.
 - What the human already settled in the chat goes into `## Decisions` as picked, and anything with a clear answer you decide and write there with its reason. `## Questions` asks only what was never discussed.
+- A table change is never yours to decide. Read `~/.claude/commands/dev/sql-db-design.md` before you write `## Schema`, follow it for every name and shape, and ask every schema change in `## Questions`, even when the answer looks clear.
 - A long design discussion keeps a `draft.md` beside the plan with what is agreed and what is still open, and links any artifact on its first line.
 - A prototype or an existing table shows what exists, like how many request types there are. It is never a design to copy: start with the simple version.
 - When the change deletes or rewrites files another unmerged branch still edits, the plan ports that branch's edits now, pinned at one commit, and says so in `## Decisions`.
@@ -125,11 +126,11 @@ The repo has none → draft it while you explore, from what you read anyway: aut
    A part that shows on many pages or screens, like the header, footer or nav, stays one component with one code. When the mockups or the design screens draw it differently per page, which one is the standard goes in `## Questions`, never a copy per page in the Decisions table, like the "Header and footer: copy each screen" that gave About another header than Home.
 6. Check any library or API you plan to use against real docs (context7 or web search), not memory.
 7. Sort every open question into one of two buckets:
-   - **You can answer it** from the code, the conventions, or a sensible default. Answer it and write the answer into the plan's Decisions table with the reason.
+   - **You can answer it** from the code, the conventions, or a sensible default. Answer it and write the answer into the plan's Decisions table with the reason. Never a schema change: a new table, column, constraint, index or reference row is always the human's.
    - **Only the human can answer it**: product behaviour, a trade-off with a real cost either way, scope, or anything irreversible. These go in `## Questions`.
 8. Write `plan/<slug>/plan.md` in the plan format below, with `Status: draft`.
 9. If the ticket adds or changes UI, draw the mockups on the canvas (below) before you write the questions, so the plan carries its link.
-10. If there is at least one human question, write `## Questions` (below). If there is none, leave the section out and set `Status: approved`.
+10. If there is at least one human question, write `## Questions` (below). If there is none, leave the section out and set `Status: approved`. A plan with a `## Schema` always has one until `check-sql-schema.py` says `approval: approved`.
 
 ## Update mode (`change` given)
 
@@ -149,7 +150,7 @@ Speed matters here; a change should take about a minute, not a redesign's five.
 ## Finalize mode (`answers` given)
 
 1. Read `plan/<slug>/plan.md` and the answers.
-2. Fold each answer into the Decisions table, and change the steps it affects, with their matrix rows and detail blocks, and the structure sections. An answer that changes a screen: redraw that artboard and send it as in update mode. When the human wrote something that is none of the options, follow what they wrote.
+2. Fold each answer into the Decisions table, and change the steps it affects, with their matrix rows and detail blocks, and the structure sections. An answer that changes a screen: redraw that artboard and send it as in update mode. When the human wrote something that is none of the options, follow what they wrote. An answer that approves the schema: write `Approved: <date>, "<their words>"` as the first line under `## Schema`, and run `check-sql-schema.py` again.
 3. If an answer opens a new question only the human can answer, replace `## Questions` with just that question. Otherwise remove `## Questions` and set `Status: approved`.
 
 ## Plan format
@@ -242,7 +243,9 @@ Each step is one file that changes, with its tests in the same step: the step wr
 
 ## Schema
 
-When the plan adds or changes a table, show the whole structure, never a summary:
+When the plan adds or changes a table, follow `~/.claude/commands/dev/sql-db-design.md` for every name and shape, and run `python3 ~/.claude/scripts/dev/check-sql-schema.py plan/<slug>/plan.md` until no `fix` is left. Until the human answers, every table here is a question in `## Questions`; after, the first line here is `Approved: <date>, "<their words>"`.
+
+Show the whole structure, never a summary:
 
 1. An ASCII picture of the tables and how they join, with the join column on each edge, in a plain fenced code block.
 2. One markdown table per table, every column, nothing cut, with 1 or 2 columns of dummy rows so the human sees what is stored:
@@ -250,9 +253,9 @@ When the plan adds or changes a table, show the whole structure, never a summary
 | Column | Type | Null | Key | Row 1 | Row 2 |
 |---|---|---|---|---|---|
 | `id` | BIGINT identity | no | PK | 1 | 2 |
-| `status` | NVARCHAR(20) | no | CHECK | draft | submitted |
+| `status_code` | NVARCHAR(20) | no | FK om.request_status | draft | submitted |
 
-3. Under each table, one bullet per CHECK value set and per rule a column carries, like "`status`: `draft`, `submitted`, `cancelled`".
+3. Every set of codes is a reference table, drawn like any other table with the rows its migration seeds, like `om.request_status` with `draft`, `submitted`, `cancelled`. Under each table, one bullet per rule a column carries, like "`model_weight`: NULL on Funds indicated".
 4. The entity snippet for each new table, in the project's own style.
 
 Dummy values look real: real ids from the dev database where you read them, real codes, real dates. Never `foo` or `test1`.
@@ -355,4 +358,5 @@ ASKING: <n questions in ## Questions>
 CANVAS: <url> (<n> artboards) | none | missing <what>
 RESEARCH: <n sources>
 NEW LIBS: none | <names, each a question>
+SCHEMA: none | asked | approved
 ```

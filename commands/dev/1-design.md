@@ -16,6 +16,7 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
 2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
 3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and design the way `dev-designer.md` says, with `ticket: plan/<slug>/ticket.md`, when it needs one.
 4. Read what the design ended on.
+   - The plan has a `## Schema` → run `python3 ~/.claude/scripts/dev/check-sql-schema.py plan/<slug>/plan.md` and fix the plan until it is clean, the way `/dev:sql-db-design` says. While `approval` is not `approved`, the design is `needs-decisions`, whatever it reported.
    - A `size: small` design found the ticket bigger than it looked (`SIZE: full, <why>`) → say why in one line, and go on with the full path: research in parallel, then a full design. Never move a ticket back down.
    - `STATUS: approved` → go to step 6.
    - `STATUS: needs-decisions` → ask in the terminal (below), run `orca-card.py waiting-decisions`, then stop and wait for the user's reply.
@@ -35,6 +36,16 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
 3. End with one line, like: "Answer here, like `Q1: A, Q2: B but keep the old column`."
 
 Anything the user writes is the answer, also when it is none of the options. Never build or open an HTML page for design, and never ask for JSON.
+
+## Database schema
+
+You never decide a table yourself. Read `~/.claude/commands/dev/sql-db-design.md` before the design writes `## Schema`, and follow it for every name and shape:
+
+- every new table, column, constraint, index or reference row is a question in `## Questions`, with real rows, until the user answers
+- the answer becomes the line `Approved: <date>, "<their words>"` under `## Schema`, and only then can the plan be `approved`
+- printing the schema in the plan is not asking
+
+(Thomas, 2026-11-10: "wtf is om.workflow_booking and om.workflow_step? you never show me the database schema nor ask my opinion about that. that is not right", then "i don't want to see this shit anymore".)
 
 ## How much design is left
 
@@ -143,6 +154,7 @@ Do not do these by hand; each script is the only way this command does it.
 | `ticket-source.py` | parse the ticket argument |
 | `orca-card.py <phase>` | move the Orca card |
 | `screen-css.py` | real CSS for the canvas |
+| `check-sql-schema.py <plan>` | check the plan's tables |
 
 All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orca, and `--dry-run` prints what it would run.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the ## Schema of a plan/<slug>/plan.md against /dev:sql-db-design, instead of by eye.
-Rules: kind, vague-name, json, time-name, missing-audit, hardcoded-values, code-without-reference,
-polymorphic, dual-purpose, approval.
+Rules: kind, abbreviation, vague-name, json, time-name, missing-audit, hardcoded-values,
+code-without-reference, polymorphic, dual-purpose, missing-purpose, missing-row-flow, approval.
 
 Usage: check-sql-schema.py <plan/<slug>/plan.md> [--audit created_by,created_time,updated_by,updated_time]
 
@@ -26,6 +26,12 @@ TIME_NAMES = {"started_time", "ended_time", "start_time", "end_time", "modified_
               "modified_date", "started_at", "ended_at", "created_at", "updated_at", "deleted_at"}
 
 CODE_ENDINGS = ("_status", "_type", "_code")
+# EV's short names; an Omega column spells the word out, also when it holds an EV id.
+ABBREVIATIONS = {"tns": "transaction", "txn": "transaction", "tty": "transaction_type", "sec": "security",
+                 "prt": "portfolio", "usr": "user", "upd": "updated", "amt": "amount", "qty": "quantity",
+                 "cur": "currency", "acct": "account", "desc": "description", "cnt": "count"}
+PURPOSE_WORDS = ("purpose", "answers", "holds", "responsible")
+ROW_FLOW = re.compile(r"^(?:#{3,6}\s+|\*\*)row flow", re.I | re.M)
 # A CHECK on one value's range, like `CHECK > 0`, is fine; a CHECK on its own holds a list of values.
 RANGE_CHECK = re.compile(r"check[^,]*?(?:[<>=]|\bbetween\b|\blike\b|\blen\b)")
 
@@ -91,6 +97,10 @@ def check_table(table, rows, audit):
             found.append(finding(table, name, "code-without-reference", "fix",
                                  "a code column needs its reference table and a foreign key, like "
                                  "`module_code` → `om.module`"))
+        if any(part in ABBREVIATIONS for part in name.split("_")):
+            full = "_".join(ABBREVIATIONS.get(part, part) for part in name.split("_"))
+            found.append(finding(table, name, "abbreviation", "fix",
+                                 f"Omega spells words out, also for an EV id: `{full}`, not `{name}`"))
         if is_vague(name):
             found.append(finding(table, name, "vague-name", "fix",
                                  "a vague name: name what it holds, and two things are two columns"))
@@ -131,6 +141,36 @@ def check_links(table, rows, names):
     return found
 
 
+def explained_tables(schema):
+    """First column of every `| Table | Holds | Answers | ...` table: the tables whose purpose is written down."""
+    named, inside = set(), False
+    for line in schema.splitlines():
+        row = line.strip()
+        if not row.startswith("|"):
+            inside = False
+            continue
+        head = [c.lower() for c in cells(row)]
+        if head[0] == "table" and any(w in " ".join(head) for w in PURPOSE_WORDS):
+            inside = True
+        elif inside and not set(head[0]) <= set("-: "):
+            named.add(cells(row)[0])
+    return named
+
+
+def check_explained(schema, tables):
+    found, named = [], explained_tables(schema)
+    for name in tables:
+        if name not in named and name.split(".", 1)[1] not in named:
+            found.append(finding(name, "*", "missing-purpose", "fix",
+                                 "the purpose table has no row for it: what it holds, the question it answers, "
+                                 "when it is written and who reads it"))
+    if tables and not ROW_FLOW.search(schema):
+        found.append(finding("*", "*", "missing-row-flow", "fix",
+                             "no `### Row flow`: walk one real request through every event, and show which row "
+                             "each table gains or changes"))
+    return found
+
+
 def approval(schema, questions, tables):
     if re.search(r"^Approved:", schema, re.M):
         return "approved"
@@ -146,6 +186,7 @@ def check(text, audit=None):
         return {"tables": 0, "approval": "none", "findings": []}
     tables = parse_tables(sections["Schema"])
     findings = [f for name, rows in tables.items() for f in check_table(name, rows, audit)]
+    findings += check_explained(sections["Schema"], list(tables))
     state = approval(sections["Schema"], sections.get("Questions", ""), list(tables))
     if state == "missing":
         findings.append(finding("*", "*", "approval", "ask",

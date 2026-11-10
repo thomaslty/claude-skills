@@ -248,15 +248,16 @@ When the plan adds or changes a table, follow `~/.claude/commands/dev/sql-db-des
 Show the whole structure, never a summary:
 
 1. An ASCII picture of the tables and how they join, with the join column on each edge, in a plain fenced code block.
-2. One markdown table per table, every column, nothing cut, with 1 or 2 columns of dummy rows so the human sees what is stored:
+2. The purpose table and the `### Row flow`, exactly as "Explain it" in `sql-db-design.md` says: what each table holds, the question it answers, when it is written and who reads it, then one real request walked through every event and every row it writes. Both come before any column.
+3. One markdown table per table, every column, nothing cut, with 1 or 2 columns of dummy rows so the human sees what is stored:
 
 | Column | Type | Null | Key | Row 1 | Row 2 |
 |---|---|---|---|---|---|
 | `id` | BIGINT identity | no | PK | 1 | 2 |
 | `status_code` | NVARCHAR(20) | no | FK om.request_status | draft | submitted |
 
-3. Every set of codes is a reference table, drawn like any other table with the rows its migration seeds, like `om.request_status` with `draft`, `submitted`, `cancelled`. Under each table, one bullet per rule a column carries, like "`model_weight`: NULL on Funds indicated".
-4. The entity snippet for each new table, in the project's own style.
+4. Every set of codes is a reference table, drawn like any other table with the rows its migration seeds, like `om.request_status` with `draft`, `submitted`, `cancelled`. Under each table, one bullet per rule a column carries, like "`model_weight`: NULL on Funds indicated".
+5. The entity snippet for each new table, in the project's own style.
 
 Dummy values look real: real ids from the dev database where you read them, real codes, real dates. Never `foo` or `test1`.
 

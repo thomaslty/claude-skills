@@ -66,6 +66,20 @@ NEW = f"""## Schema
 
 Approved: 2026-11-10, "yes to all"
 
+| Table | Holds | Answers | Written when | Read by |
+|---|---|---|---|---|
+| `om.workflow_step` | one row per step, per try | Who did each step, when? | a step starts, ends | the map |
+| `om.workflow_step_status` | the valid step states | Which states exist? | migration seed | foreign keys |
+| `om.workflow_order` | each buy order placed | Which orders are C-14's? | Confirm deposit | step 6 check |
+
+### Row flow
+
+```
+2 Dealer clicks Confirm deposit   POST /api/dealer/workflow/contribution/14/deposit-received
+   om.workflow_step    UPDATE  deposit_received  current -> done
+   om.workflow_order   INSERT  workflow 2 -> order 1, weight 40
+```
+
 ### om.workflow_step — one row per step, per attempt
 
 | Column | Type | Null | Key | Row 1 | Row 2 |
@@ -196,3 +210,27 @@ def test_a_reference_table_needs_created_time_but_not_created_by():
     found = rules(NEW.replace("| `created_time` | DATETIME2 | no | getutcdate() | 2026-11-10 09:00 | 2026-11-10 09:00 |\n", ""))
     assert ("created_time", "missing-audit", "fix") in found
     assert ("created_by", "missing-audit", "fix") not in found
+
+
+def test_ev_short_names_get_their_full_omega_names():
+    text = OLD_BOOKING.replace("`tns_id`", "`tns_id`").replace("| `kind` |", "| `sec_id` | INT | no | | 2 | 2 |\n| `kind` |")
+    found = schema.check(text)["findings"]
+    short = {f["column"]: f["message"] for f in found if f["rule"] == "abbreviation"}
+    assert "`transaction_id`" in short["tns_id"] and "`security_id`" in short["sec_id"]
+    assert "abbreviation" not in [f["rule"] for f in schema.check(NEW)["findings"]]
+
+
+def test_every_table_needs_a_row_in_the_purpose_table():
+    text = NEW.replace("| `om.workflow_order` | each buy order placed | Which orders are C-14's? | Confirm deposit | step 6 check |\n", "")
+    assert ("*", "missing-purpose", "fix") in [(f["column"], f["rule"], f["do"]) for f in schema.check(text)["findings"]
+                                               if f["table"] == "om.workflow_order"]
+
+
+def test_a_seeded_rows_table_is_not_a_purpose_table():
+    text = NEW.replace("| Table | Holds | Answers | Written when | Read by |", "| Table | code | label_en | label_fr | x |")
+    assert len([f for f in schema.check(text)["findings"] if f["rule"] == "missing-purpose"]) == 3
+
+
+def test_a_schema_with_no_row_flow_is_a_fix():
+    text = NEW.replace("### Row flow", "### Notes")
+    assert ("*", "missing-row-flow", "fix") in rules(text)

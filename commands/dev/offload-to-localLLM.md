@@ -166,12 +166,13 @@ Round 1 of `/dev:3-review` only. It runs at the same time as Claude's reviewers,
 2. Brief: review that diff against the plan, with the lenses in `~/.claude/agents/dev-reviewer.md`. List each finding in the report as `qwen-<n> | <file>:<line> | <what breaks, for whom>`. `## Files you may change` is "none".
 3. In the same turn you spawn Claude's reviewers, run `offload.py start <run-dir>` as a background shell, so both run together and you are told when qwen is done.
 4. Print Claude's findings as soon as they are ready. Never wait for qwen.
-5. When qwen's run exits, before the user replies:
+5. When qwen's run exits, before the user replies, or inside `/dev:full-dev-cycle` before the first re-review starts:
    - `offload.py check <run-dir>`. It changed any file → `offload.py restore <run-dir> --all`.
    - Each of its findings that no reviewer reported at the same `file:line` goes into `dev/<slug>/review/qwen.json`, in the reviewer's JSON shape, with `"lens": "qwen"`, an id like `qwen-1`, and `cause` starting "From qwen's pre-pass, not confirmed:".
    - Merge again with `qwen.json` added to the files in `/dev:3-review` step 7, and print just the `qwen-<n>` findings.
+   - Inside the cycle they join the fix round that is going on.
    - A false one dies at the fix step, since every fix starts with a test that has to fail first.
-6. The user replied before qwen finished → stop the run (`kill -- -<the pid in the run folder's pid file>`) and leave its findings out.
+6. The user replied before qwen finished, or inside the cycle the first re-review is about to start → stop the run (`kill -- -<the pid in the run folder's pid file>`) and leave its findings out.
 
 ## Hard rules
 

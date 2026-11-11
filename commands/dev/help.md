@@ -29,7 +29,7 @@ Every phase runs in this session; only the research topics and the reviewers are
 | `/dev:sql-db-design [plan]` | Table rules and checker; every schema change waits for your yes |
 | `/dev:2-implement` | Follow the plan until every step is verified |
 | `/dev:3-review` | 1 reviewer, a security pass when risky, T0 only, fix / skip in the terminal |
-| `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⏸ → fix → re-review of the fix |
+| `/dev:full-dev-cycle [ticket]` | Design ⏸ → implement → review ⇄ fix, until a review finds 0 |
 | `/dev:offload-to-localLLM` | qwen writes the code, Claude checks it; alone or next to the others |
 
 `[ticket]` is a Jira URL/key, a Notion URL, or plain text. Leave it empty in a worktree Orca made from a Jira ticket. ⏸ = it stops and waits for you; the build never starts until you say go.

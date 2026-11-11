@@ -33,25 +33,26 @@ python3 ~/.claude/scripts/dev/review-findings.py --plan plan/<slug>/plan.md dev/
 ```
 
    Leave out a file no agent wrote. It merges findings at the same `file:line` into one (listing every lens), writes `dev/<slug>/review/findings.json`, and writes `dev/<slug>/review/findings.md` for the terminal.
-   - `findings: 0` and no qwen pre-pass running → tell the user "review clean: <n> reviewers, 0 T0 issues", run `orca-card.py ready`, and stop.
+   - `findings: 0` and no qwen pre-pass running → tell the user "review clean: <n> reviewers, 0 T0 issues", run `orca-card.py ready`, and stop. Inside `/dev:full-dev-cycle`, go on to its `## When done`.
 8. Print `dev/<slug>/review/findings.md` in the terminal as it is, as soon as it is ready: the count by lens, then every finding with its `Where`, root cause, impact and fix. Never cut it to titles. Open no file or diff tabs; the `Where` path is the link. Never wait for qwen's pre-pass: its items follow before the user replies, the way the offload skill says.
-9. Run `orca-card.py waiting-review`. End with one line, like: "Reply here, like `fix all` or `sec-1 fix, cor-2 skip: we only log ids`." Stop and wait.
-10. The user's reply is the answer, typed by the user. A `/goal` or your own plan is never a reply, the way rule 2 in `~/.claude/commands/dev/full-dev-cycle.md` says. A finding it does not mention → ask about just those, in one line. Then:
+9. Inside `/dev:full-dev-cycle` → skip this step: no card, no "Reply here" line, no wait, the way rule 2 in `~/.claude/commands/dev/full-dev-cycle.md` says. Otherwise run `orca-card.py waiting-review`. End with one line, like: "Reply here, like `fix all` or `sec-1 fix, cor-2 skip: we only log ids`." Stop and wait.
+10. The user's reply is the answer, typed by the user. A `/goal`, a hook or your own plan is never a reply. A finding it does not mention → ask about just those, in one line. Inside `/dev:full-dev-cycle` there is no reply: every finding is `fix`. Then:
     - Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: review`, `plan`, and `feedback: <the reply verbatim>`. Skipped findings and comments are the strongest signal of what this project does not care about. Inside `/dev:full-dev-cycle`, skip this: the cycle learns once at the end.
-    - Append a `## Review` section to the plan listing each finding id, its choice, and the comment.
+    - Append a `## Review` section to the plan listing each finding id, its choice, and the comment. Inside the cycle the choice is `fix, by the cycle`, never a reply the user did not type.
     - If any finding is to be fixed, or the reply asks for something else:
       - snapshot each repo the fixes touch, so the re-review can read only what they change: `python3 ~/.claude/scripts/dev/changes.py snapshot dev/<slug>/review/fix-<round>/<repo> --root <that repo's worktree>`
-      - run `orca-card.py fixing`, then fix them yourself, in this session, the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. The reply is the go-ahead for these fixes.
+      - run `orca-card.py fixing`, then fix them yourself, in this session, the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. The reply is the go-ahead for these fixes; inside the cycle, its rule 2 is.
       - then the re-review (below).
 
 ## Re-review
 
-It runs once, and reads only what the fixes changed. On the offload test, round 2 re-read all 21 files to check 2 fixes, and both bugs it found were in the fixed lines.
+It runs once, and reads only what the fixes changed. On the offload test, round 2 re-read all 21 files to check 2 fixes, and both bugs it found were in the fixed lines. Inside `/dev:full-dev-cycle` it runs after every fix round, each time on that round's fixes only.
 
 1. Move this round's review files into `dev/<slug>/review/round<n>/`.
 2. For each repo: `python3 ~/.claude/scripts/dev/changes.py diff dev/<slug>/review/fix-<round>/<repo> > dev/<slug>/review/fix-<round>/<repo>.patch`.
 3. Spawn one `dev-reviewer` with `lens: all`, `plan`, `diff: <those patch files>` and `fixes: dev/<slug>/review/round<n>/findings.json`, at `effort: high`. A patch touches a risky file or adds a `## Patterns` text from `.claude/risky.md` → also one with `lens: security` and the same `diff`, at `effort: xhigh`. No qwen pre-pass.
-4. Merge and print the way steps 6 to 8 say. Then stop: another round starts only when the user asks for it, the way rule 4 in `~/.claude/commands/dev/full-dev-cycle.md` says.
+4. Merge and print the way steps 6 to 8 say. Then stop: another round starts only when the user asks for it.
+   - Inside `/dev:full-dev-cycle` → do not stop. Findings left → back to step 10 with them, then this re-review again, until one finds 0. Round 5 still has a finding → a blocker, the way rule 4 in `~/.claude/commands/dev/full-dev-cycle.md` says.
 
 ## Cross-References
 

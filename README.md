@@ -58,7 +58,7 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 | `/dev:1-design` | Fresh agent writes `plan/<slug>/plan.md` with folder tree, code structure, flow and full schema, asks you in the terminal |
 | `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
 | `/dev:3-review` | 4 fresh reviewers (correctness, security, feature, completeness), T0 only, fix / skip in the terminal |
-| `/dev:full-dev-cycle` | Design ⏸ → implement → review ⏸ → fix, each phase a fresh agent, stops for you after design and review |
+| `/dev:full-dev-cycle` | Design ⏸ → implement → review ⇄ fix until a review finds 0, each phase a fresh agent, stops for you after design |
 | `/dev:learn-conventions` | Merge learned coding conventions into `.claude/conventions.md` |
 | `/dev:code-review` | Review the diff for correctness and quality (logic, readability, reuse, efficiency) |
 | `/dev:security-review` | Review for vulnerabilities (injection, secrets, auth gaps, CVEs, data exposure) |

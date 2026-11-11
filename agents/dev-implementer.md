@@ -13,7 +13,7 @@ The plan file, and the OpenSpec change you write from it, are your whole brief.
 ## Inputs (from the brief)
 
 - `plan` — path to `plan/<slug>/plan.md` with `Status: approved`.
-- `fixes` — optional. Review findings the human chose to fix, as JSON. When present, you do only those.
+- `fixes` — optional. Review findings to fix, as JSON: the ones the human chose, or every one inside `/dev:full-dev-cycle`. When present, you do only those.
 - `db` — optional. What the human picked when there was no local database, like `clone .env.dev1 --prefix OMEGA`.
 - `only: change` — optional. The setup run before a split build. Write the OpenSpec change, get the local database ready, do the plan's `setup` steps, and put the plan in the split shape (below). With `fixes`, only add each fix as a step and a task, with its `Repo`. Then report. Do no other step.
 - `repo` — optional. One repo by the name the Matrix's `Repo` column uses, like `backend`; its worktree is in the plan's `## Repos`. Other implementers build the other repos at the same time, so:

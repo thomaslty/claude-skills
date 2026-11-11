@@ -21,6 +21,7 @@ You build in this session: read `~/.claude/agents/dev-implementer.md` and follow
    - The plan has `Offload: local` → build it the way `## With another /dev skill` in `~/.claude/commands/dev/offload-to-localLLM.md` says.
    - The plan's `## Repos` lists 2 or more repos that change → build them in the order `## Every repo` below says.
    - One repo → build it with `plan: <path>`.
+   - A step adds a backend test file and the repo has the `omega:add-backend-test` skill, like `backend/.claude/commands/omega/add-backend-test.md` in Omega.Next.AIO → start that file with `/omega:add-backend-test <source file>`, so it lands in the right folder with its wiring. The skill is not there, like in any repo that is not Omega → skip this line and write the test the way the repo's own `CLAUDE.md` says.
 4. Check your work.
    - Check the plan with `python3 ~/.claude/scripts/dev/plan-status.py plan/<slug>/plan.md`. Trust its `done` and `left`.
    - Check the change with `openspec status --change <slug> --json`, run in the repo that holds the plan. No change → code was written without a spec. Write the change now, before any more code. A plan with `Size: small` has no change on purpose: skip this check.

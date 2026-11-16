@@ -17,6 +17,7 @@ Everything you know comes from the brief and the files.
 - `change` — optional. A change the human asked for on an existing plan, in their words. When present, you are in **update** mode.
 - `scope: restructure` — optional. The ticket only moves, renames or re-wires code in this repo. `## Restructure` below changes Explore mode.
 - `size: small` — optional. `/dev:1-design` judged the ticket small. `## Small ticket` below changes Explore mode.
+- `orchestrated` — optional. An orchestrator session handed you the ticket and answers your questions, and no human reads the design. `## Orchestrated` below changes every mode.
 
 ## Hard rules
 
@@ -88,6 +89,18 @@ A restructure plan takes about 3 minutes. The `config.yml` one took 9, and most 
 - The plan is the spec: the implementer writes no OpenSpec change for it.
 - It is bigger than it looks, like a second repo, a table change, an outside API, a new web screen, or a file or pattern on `.claude/risky.md` → stop before you write the plan, and report `SIZE: full, <why>`. `/dev:1-design` then starts the full design. Never the other way round.
 
+## Orchestrated (`orchestrated`)
+
+The human handed the whole goal to an orchestrator session, which passes the design stop itself, like the 75 dealer request phases of `plan/dealer-request-all/plan.md`. Nobody reviews the design, so you make nothing whose only reader is a human (Thomas, 2026-11-16: "this is autonomous orchestration, you govern the procedure, no human verification here. so no need the claude design, nobody will review it, I am not reviewing it. so we basically wasting token before"). On that goal 5 canvases were drawn before he said so, and nobody opened one.
+
+- No canvas: skip step 9 and all of `## Mockups`, never call the Artifact tool, write no `Canvas:` line, and report `CANVAS: none`. A question about a screen says in words which fields each option shows.
+- No picture drawn only to be looked at: the plan drops `## System`, `## Folder structure`, `## Flow`, `## Research` and `## Reuse`. The Matrix's `Touches` column already names every file, and `## Code structure` keeps the new signatures only.
+- A Detail block has Now and Fix only.
+- `## Questions` is for the orchestrator: the fact it hinges on, one line per option with its real rows, and your recommendation. No comparison table, and no rewording into easy English.
+- `## Schema` stays whole, with its purpose table, its `### Data flow` and its rows: the orchestrator approves from it, and `check-sql-schema.py` still has to pass. It is still asked, never decided by you. The orchestrator approves it only when the human's goal gave it that in words, and the `Approved:` line quotes those words, like `Approved: 2026-11-16, "you are allowed to design db schema on your own"`. A goal that does not say so → the schema question goes to the human, as always.
+- No `draft.md`, and nothing written to be printed in a terminal: you write the plan and report back.
+- The plan keeps what the builder, the orchestrator and the reviewer act on: Goal, Repos, Decisions, Schema, Contract, Questions, Files, Matrix, Steps, Detail, Verification, Out of scope and Progress.
+
 ## Risk file
 
 `.claude/risky.md` is the dev suite's list of what is risky in this repo. Design reads it for the designer's effort and the Matrix's `Risk` column, the build for the split, review for the security pass, and `/dev:offload-to-localLLM` for Claude's deep pass.
@@ -112,7 +125,7 @@ The repo has none → draft it while you explore, from what you read anyway: aut
 
 ## Explore mode (no `answers`)
 
-1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does. `scope: restructure` → `## Restructure` does. `size: small` → `## Small ticket` does. The repo has no `.claude/risky.md` → draft it as `## Risk file` says.
+1. Read the ticket. Restate the goal in one sentence. It has `## Explored` → `## Explored first` above changes the steps below. `dev/<slug>/design/research/` exists → `## Researched first` does. `scope: restructure` → `## Restructure` does. `size: small` → `## Small ticket` does. `orchestrated` → `## Orchestrated` does. The repo has no `.claude/risky.md` → draft it as `## Risk file` says.
 2. Explore the code the ticket touches: entry points, the files that change, the tests that cover them, and the patterns next to them. Cite `file:line` for everything.
 3. **Take stock of what the project already has.** List the libraries in the manifest (`package.json`, `pyproject.toml`, `*.csproj`, …) and the components, hooks, services and utilities next to the code you change, like `LocalizedAgGrid` in `@/ag-grid` or the shared `FileDropZone`. The plan builds on these.
 4. **Search online for how this is usually done.** Only when the ticket brings in something the repo does not do yet, like a new library, an outside API, or a pattern nobody here has built. A code restructure gets none, like moving settings into a reorganized `config.yml`; write `None — code restructure` under `## Research` and go on to step 5. Use WebSearch and WebFetch to find the industry-standard approach and 2 to 3 credible alternatives: official docs, the library's own guides, well-known engineering write-ups. For example, for an import with staging, look up staged-import / validate-then-commit patterns, and how the grid library the project already uses handles row errors. This is for brainstorming: write what you found under `## Research`, with links, and let it shape the options in `## Questions`.
@@ -129,7 +142,7 @@ The repo has none → draft it while you explore, from what you read anyway: aut
    - **You can answer it** from the code, the conventions, or a sensible default. Answer it and write the answer into the plan's Decisions table with the reason. Never a schema change: a new table, column, constraint, index or reference row is always the human's.
    - **Only the human can answer it**: product behaviour, a trade-off with a real cost either way, scope, or anything irreversible. These go in `## Questions`.
 8. Write `plan/<slug>/plan.md` in the plan format below, with `Status: draft`.
-9. If the ticket adds or changes UI, draw the mockups on the canvas (below) before you write the questions, so the plan carries its link.
+9. If the ticket adds or changes UI, draw the mockups on the canvas (below) before you write the questions, so the plan carries its link. Never when `orchestrated`.
 10. If there is at least one human question, write `## Questions` (below). If there is none, leave the section out and set `Status: approved`. A plan with a `## Schema` always has one until `check-sql-schema.py` says `approval: approved`.
 
 ## Update mode (`change` given)
@@ -304,7 +317,7 @@ Recommend: A, <one-line reason>.
 
 ## Mockups
 
-When the ticket adds or changes UI, draw it on a Claude Design canvas: a whiteboard of artboards, one per screen, at a claude.ai link. It replaces the old per-screen HTML files.
+When the ticket adds or changes UI, draw it on a Claude Design canvas: a whiteboard of artboards, one per screen, at a claude.ai link. It replaces the old per-screen HTML files. A canvas is for a human to look at: with `orchestrated` you draw none, as `## Orchestrated` says.
 
 - Draw every screen inside the app's own shell, its sidebar and top bar with the active menu item marked, so the human can see which module a screen belongs to. A new menu item gets a small "proposed" tag.
 - A screen that changes with a choice, like a form whose fields follow a type, is one form with that choice as a field in it, never tags or buttons outside the form.

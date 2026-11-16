@@ -29,6 +29,17 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
    - `RISK FILE: drafted` → print `.claude/risky.md` after the plan, with one line: "I drafted this repo's risk list; it raises effort, splits the build and adds a security review. Tell me what to change, or your go covers it."
 7. Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`. Inside `/dev:full-dev-cycle`, skip this step: the cycle learns once at the end.
 
+## Orchestrated
+
+The user handed the whole goal to an orchestrator session that passes the design stop itself, like a `/goal` that says "you are the orchestrator" and "fully autonomous". Nobody reviews the design, so nothing is made for a human to look at (Thomas, 2026-11-16: "this is autonomous orchestration, you govern the procedure, no human verification here. so no need the claude design, nobody will review it, I am not reviewing it. so we basically wasting token before").
+
+- Design with `orchestrated`, the way `## Orchestrated` in `dev-designer.md` says: no Claude Design canvas, no `screen-css.py`, no picture sections, questions written for the orchestrator.
+- Step 4 prints nothing in the terminal. `STATUS: needs-decisions` → report back to the orchestrator with the plan's path and stop; its reply is the `answers`.
+- Skip step 6: nobody reads a `/show-plan` view.
+- Skip step 7: there is no reply of the user's to learn from.
+- You are the orchestrator → the brief you hand a designer says `orchestrated`. Read the plan file yourself, run `check-sql-schema.py` on a `## Schema`, answer in one line, like `Q1: A. Q2: B.`, and say go.
+  - A schema is yours to approve only when the user's goal gave you that in words, like "you are allowed to design db schema on your own". Otherwise it goes to the user, as `## Database schema` says.
+
 ## Ask in the terminal
 
 1. Show the plan the way `/show-plan` does, from `plan/<slug>/plan.md`: Goal, the System graph, the Matrix and the Detail, then its Folder structure, Code structure, Flow and Schema, as they are in the file.

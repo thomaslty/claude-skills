@@ -16,32 +16,31 @@ One reviewer reads the diff once with every lens, not four reviewers with one ea
 
 1. Plan: from `$ARGUMENTS`, or the only plan in `plan/`, or ask in one line.
 2. Base: `--base <ref>` if given, otherwise the plan's `Base:` line, which `/dev:2-implement` writes before the build. A plan without one → `git merge-base HEAD origin/HEAD` (fall back to `master` or `main`). A repo with no commit yet → `4b825dc642cb6eb9a060e54bf8d69288fbee4904`, git's empty tree.
-3. Card: `python3 ~/.claude/scripts/dev/orca-card.py review`
-4. Completeness by script, before any agent:
+3. Completeness by script, before any agent:
    - `python3 ~/.claude/scripts/dev/plan-status.py plan/<slug>/plan.md` must say `done: true`
    - and, unless the plan has `Size: small`, `openspec status --change <slug> --json` must show every task done
    - Either one fails → that is finding `comp-1`, with the steps `left` as its cause. Write it to `dev/<slug>/review/scripts.json` in the reviewer's JSON shape. Otherwise write `[]` there.
-5. Spawn the reviewers in ONE message, each with `plan` and `base`:
+4. Spawn the reviewers in ONE message, each with `plan` and `base`:
    - always one `dev-reviewer` with `lens: all`, at `effort: high`
    - the change is risky → also one with `lens: security`, at `effort: xhigh`. Risky is any of: the plan has a `Risk: high` step; a changed file is under `## Claude only` or `## Deep pass` in `.claude/risky.md` (`git diff --name-only <base>` plus the untracked files); or the repo has no `.claude/risky.md`
    - the plan has `Offload: local` → in the same turn, start qwen's pre-pass, the way "Review pre-pass" in `~/.claude/commands/dev/offload-to-localLLM.md` says. It runs next to the reviewers and never changes a file.
-6. Save each agent's JSON array verbatim as `dev/<slug>/review/all.json` and `dev/<slug>/review/security.json`. Do not edit, merge or rewrite them. On a re-review, first move the last round's files into `dev/<slug>/review/round<n>/`.
-7. Merge them:
+5. Save each agent's JSON array verbatim as `dev/<slug>/review/all.json` and `dev/<slug>/review/security.json`. Do not edit, merge or rewrite them. On a re-review, first move the last round's files into `dev/<slug>/review/round<n>/`.
+6. Merge them:
 
 ```bash
 python3 ~/.claude/scripts/dev/review-findings.py --plan plan/<slug>/plan.md dev/<slug>/review/{scripts,all,security}.json
 ```
 
    Leave out a file no agent wrote. It merges findings at the same `file:line` into one (listing every lens), writes `dev/<slug>/review/findings.json`, and writes `dev/<slug>/review/findings.md` for the terminal.
-   - `findings: 0` and no qwen pre-pass running → tell the user "review clean: <n> reviewers, 0 T0 issues", run `orca-card.py ready`, and stop. Inside `/dev:full-dev-cycle`, go on to its `## When done`.
-8. Print `dev/<slug>/review/findings.md` in the terminal as it is, as soon as it is ready: the count by lens, then every finding with its `Where`, root cause, impact and fix. Never cut it to titles. Open no file or diff tabs; the `Where` path is the link. Never wait for qwen's pre-pass: its items follow before the user replies, the way the offload skill says.
-9. Inside `/dev:full-dev-cycle` → skip this step: no card, no "Reply here" line, no wait, the way rule 2 in `~/.claude/commands/dev/full-dev-cycle.md` says. Otherwise run `orca-card.py waiting-review`. End with one line, like: "Reply here, like `fix all` or `sec-1 fix, cor-2 skip: we only log ids`." Stop and wait.
-10. The user's reply is the answer, typed by the user. A `/goal`, a hook or your own plan is never a reply. A finding it does not mention → ask about just those, in one line. Inside `/dev:full-dev-cycle` there is no reply: every finding is `fix`. Then:
+   - `findings: 0` and no qwen pre-pass running → tell the user "review clean: <n> reviewers, 0 T0 issues", and stop. Inside `/dev:full-dev-cycle`, go on to its `## When done`.
+7. Print `dev/<slug>/review/findings.md` in the terminal as it is, as soon as it is ready: the count by lens, then every finding with its `Where`, root cause, impact and fix. Never cut it to titles. Open no file or diff tabs; the `Where` path is the link. Never wait for qwen's pre-pass: its items follow before the user replies, the way the offload skill says.
+8. Inside `/dev:full-dev-cycle` → skip this step: no "Reply here" line, no wait, the way rule 2 in `~/.claude/commands/dev/full-dev-cycle.md` says. Otherwise end with one line, like: "Reply here, like `fix all` or `sec-1 fix, cor-2 skip: we only log ids`." Stop and wait.
+9. The user's reply is the answer, typed by the user. A `/goal`, a hook or your own plan is never a reply. A finding it does not mention → ask about just those, in one line. Inside `/dev:full-dev-cycle` there is no reply: every finding is `fix`. Then:
     - Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: review`, `plan`, and `feedback: <the reply verbatim>`. Skipped findings and comments are the strongest signal of what this project does not care about. Inside `/dev:full-dev-cycle`, skip this: the cycle learns once at the end.
     - Append a `## Review` section to the plan listing each finding id, its choice, and the comment. Inside the cycle the choice is `fix, by the cycle`, never a reply the user did not type.
     - If any finding is to be fixed, or the reply asks for something else:
       - snapshot each repo the fixes touch, so the re-review can read only what they change: `python3 ~/.claude/scripts/dev/changes.py snapshot dev/<slug>/review/fix-<round>/<repo> --root <that repo's worktree>`
-      - run `orca-card.py fixing`, then fix them yourself, in this session, the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. The reply is the go-ahead for these fixes; inside the cycle, its rule 2 is.
+      - fix them yourself, in this session, the way `## Fixes` in `~/.claude/commands/dev/2-implement.md` says, with `fixes`: those findings from `dev/<slug>/review/findings.json`, plus the user's comments. The reply is the go-ahead for these fixes; inside the cycle, its rule 2 is.
       - then the re-review (below).
 
 ## Re-review
@@ -51,8 +50,8 @@ It runs once, and reads only what the fixes changed. On the offload test, round 
 1. Move this round's review files into `dev/<slug>/review/round<n>/`.
 2. For each repo: `python3 ~/.claude/scripts/dev/changes.py diff dev/<slug>/review/fix-<round>/<repo> > dev/<slug>/review/fix-<round>/<repo>.patch`.
 3. Spawn one `dev-reviewer` with `lens: all`, `plan`, `diff: <those patch files>` and `fixes: dev/<slug>/review/round<n>/findings.json`, at `effort: high`. A patch touches a risky file or adds a `## Patterns` text from `.claude/risky.md` → also one with `lens: security` and the same `diff`, at `effort: xhigh`. No qwen pre-pass.
-4. Merge and print the way steps 6 to 8 say. Then stop: another round starts only when the user asks for it.
-   - Inside `/dev:full-dev-cycle` → do not stop. Findings left → back to step 10 with them, then this re-review again, until one finds 0. Round 5 still has a finding → a blocker, the way rule 4 in `~/.claude/commands/dev/full-dev-cycle.md` says.
+4. Merge and print the way steps 5 to 7 say. Then stop: another round starts only when the user asks for it.
+   - Inside `/dev:full-dev-cycle` → do not stop. Findings left → back to step 9 with them, then this re-review again, until one finds 0. Round 5 still has a finding → a blocker, the way rule 4 in `~/.claude/commands/dev/full-dev-cycle.md` says.
 
 ## Cross-References
 

@@ -22,8 +22,6 @@ Every phase runs in this session; only the research topics and the reviewers are
 
 | Command | What it does |
 |---|---|
-| `/dev:ticket new <slug>` | Orca card in Todo + worktree + `plan/<slug>/ticket.md` |
-| `/dev:ticket start <slug>` | Card to In Progress, Claude runs the full cycle there |
 | `/dev:0-explore` | Grill a rough idea into a ticket: research, canvas, questions per round in the terminal |
 | `/dev:1-design` | Plan in `plan/<slug>/plan.md`, questions asked in the terminal |
 | `/dev:sql-db-design [plan]` | Table rules and checker; every schema change waits for your yes |

@@ -17,7 +17,7 @@ Explore talks to the user in the terminal only. No HTML page, no JSON to copy.
 1. Find the idea (below). The rest of this command works from `plan/<slug>/idea.md`.
 2. The brief says `Round: 0` → research in parallel first (below). Then do round 1 the way `dev-explorer.md` says, with `idea: plan/<slug>/idea.md`.
 3. Read what the round ended on.
-   - `STATUS: needs-answers` → show the brief in the terminal (below), run `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`, then stop and wait for the user's reply.
+   - `STATUS: needs-answers` → show the brief in the terminal (below), then stop and wait for the user's reply.
    - `STATUS: settled` or `too-small` → step 5.
 4. Do the next round for the user's reply, the way `dev-explorer.md` says, then back to step 3:
    - Answers to the questions, in their own words, like `Q1: B, Q2: admins only` → pass `idea` and `answers: <their reply verbatim>`.

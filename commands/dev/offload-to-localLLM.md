@@ -131,8 +131,8 @@ A plan with `Offload: local` is built and fixed by the session you talk to, neve
 - read `~/.claude/agents/dev-implementer.md` and follow it yourself, with `plan`, plus `fixes` in a fix round
 - you build every repo in the plan: the `setup` steps, then each repo's steps, then the `join` steps and `## Verification`
 - start the briefs of different repos at once, up to 4, when they share no file
-- never stop with `STATUS: partial` and write no `## Report back`: tell the user what now works, the way `/dev:2-implement` step 6 says
-- `STATUS: needs-db` or a blocker → ask or tell the user straight away, the way `/dev:2-implement` step 4 says
+- never stop with `STATUS: partial` and write no `## Report back`: tell the user what now works, the way `/dev:2-implement` step 5 says
+- `STATUS: needs-db` or a blocker → ask or tell the user straight away, the way `/dev:2-implement` step 3 says
 - start no agent to build or to feed qwen. On 2026-11-05 one backend build started 9 helpers to feed qwen faster. Every first-round run timed out, the helpers wrote most of the code themselves, and they used about 2.36 billion cached-token reads in one night
 
 When you start the first run, or the review pre-pass, start `offload.py watch` with no run folder under Monitor, the same way as in "Alone". With no run folder it follows every run going on this machine, each block titled `<repo>/<run>`, so another session's run shows up too, and it prints `QWEN BUSY` for every run that waits for a slot. Start it again every 30 minutes until your runs are done.
@@ -169,7 +169,7 @@ Round 1 of `/dev:3-review` only. It runs at the same time as Claude's reviewers,
 5. When qwen's run exits, before the user replies, or inside `/dev:full-dev-cycle` before the first re-review starts:
    - `offload.py check <run-dir>`. It changed any file → `offload.py restore <run-dir> --all`.
    - Each of its findings that no reviewer reported at the same `file:line` goes into `dev/<slug>/review/qwen.json`, in the reviewer's JSON shape, with `"lens": "qwen"`, an id like `qwen-1`, and `cause` starting "From qwen's pre-pass, not confirmed:".
-   - Merge again with `qwen.json` added to the files in `/dev:3-review` step 7, and print just the `qwen-<n>` findings.
+   - Merge again with `qwen.json` added to the files in `/dev:3-review` step 6, and print just the `qwen-<n>` findings.
    - Inside the cycle they join the fix round that is going on.
    - A false one dies at the fix step, since every fix starts with a test that has to fail first.
 6. The user replied before qwen finished, or inside the cycle the first re-review is about to start → stop the run (`kill -- -<the pid in the run folder's pid file>`) and leave its findings out.

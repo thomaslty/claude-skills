@@ -53,7 +53,6 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 | `/dev:parallel-development` | Build multiple proposals at once via per-worktree parallel sub-agents |
 | `/dev:finishing-development` | Archive, then land each repo by its own `.claude/finishing-development.md`; asks for the rules first when a repo has none; ends with `/dev:cleanup` |
 | `/dev:cleanup` | Stop what this session left running — background scripts, servers, open ports, containers, compose projects; lists first, stops what you pick |
-| `/dev:ticket` | Orca board ticket — `new` makes a card + worktree, `start` launches Claude on it |
 | `/dev:0-explore` | Fresh agent expands and grills a rough idea round by round (research, Claude Design canvas, questions in the terminal) until it settles into `plan/<slug>/ticket.md` |
 | `/dev:1-design` | Fresh agent writes `plan/<slug>/plan.md` with folder tree, code structure, flow and full schema, asks you in the terminal; handed to an orchestrator, it draws no canvas and makes nothing only a human would read |
 | `/dev:2-implement` | Fresh agent follows the plan under the guideline until every step is verified |
@@ -85,7 +84,7 @@ The `dev:0-explore` … `dev:full-dev-cycle` commands need the `agents/` copies 
 ```
 claude-skills/
 ├── agents/                # Phase agents for dev: (explorer, designer, implementer, reviewer, convention-learner)
-├── scripts/dev/           # ticket-source, orca-card, plan-status, review-findings, screen-css, chrome-devtools-unlock, session-cleanup, localdb (+ localdb.compose.yml), menu/ (the make menu template)
+├── scripts/dev/           # ticket-source, plan-status, review-findings, screen-css, chrome-devtools-unlock, session-cleanup, localdb (+ localdb.compose.yml), menu/ (the make menu template)
 ├── skills/                # Skills (/<name>)
 │   ├── explore/
 │   ├── no-code-change/

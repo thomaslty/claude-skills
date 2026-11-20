@@ -13,30 +13,29 @@ Design talks to you in the terminal only. No HTML page, no JSON to copy: the ter
 ## Steps
 
 1. Find the ticket (below). The rest of this command works from `plan/<slug>/ticket.md`.
-2. Card: `python3 ~/.claude/scripts/dev/orca-card.py design`
-3. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and design the way `dev-designer.md` says, with `ticket: plan/<slug>/ticket.md`, when it needs one.
-4. Read what the design ended on.
+2. If the ticket or the user brings in another repo, set up its worktree first: follow "Other repos" in `~/.claude/commands/dev/full-dev-cycle.md`. Then decide how much design is left (below), and design the way `dev-designer.md` says, with `ticket: plan/<slug>/ticket.md`, when it needs one.
+3. Read what the design ended on.
    - The plan has a `## Schema` → run `python3 ~/.claude/scripts/dev/check-sql-schema.py plan/<slug>/plan.md` and fix the plan until it is clean, the way `/dev:sql-db-design` says. While `approval` is not `approved`, the design is `needs-decisions`, whatever it reported.
    - A `size: small` design found the ticket bigger than it looked (`SIZE: full, <why>`) → say why in one line, and go on with the full path: research in parallel, then a full design. Never move a ticket back down.
-   - `STATUS: approved` → go to step 6.
-   - `STATUS: needs-decisions` → ask in the terminal (below), run `orca-card.py waiting-decisions`, then stop and wait for the user's reply.
+   - `STATUS: approved` → go to step 5.
+   - `STATUS: needs-decisions` → ask in the terminal (below), then stop and wait for the user's reply.
    - The plan has a `Canvas:` line → give the user the link as one more line.
-5. The user's reply is the answer, in their own words. Finish the design with it, the way `dev-designer.md` says for `answers: <their reply verbatim>`. Back to step 4.
+4. The user's reply is the answer, in their own words. Finish the design with it, the way `dev-designer.md` says for `answers: <their reply verbatim>`. Back to step 3.
    - The user asks to change a design that already exists ("move X", "rename Y", "add Z to the screen") → a partial update: it edits only what the change touches and sends only the changed artboards to the same canvas. Never start a full redesign for a change.
      - Do it the way `dev-designer.md` says for `change: <their words>`.
-     - Then show the parts you changed, the way step 6 shows a plan, and back to step 4.
-6. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
+     - Then show the parts you changed, the way step 5 shows a plan, and back to step 3.
+5. Show the approved plan the way `/show-plan` does: read `~/.claude/commands/show-plan.md` and follow it for `plan/<slug>/plan.md`.
    - `RISK FILE: drafted` → print `.claude/risky.md` after the plan, with one line: "I drafted this repo's risk list; it raises effort, splits the build and adds a security review. Tell me what to change, or your go covers it."
-7. Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`. Inside `/dev:full-dev-cycle`, skip this step: the cycle learns once at the end.
+6. Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: design`, `plan`, and `feedback: <every reply the user gave in this design, verbatim>`. Inside `/dev:full-dev-cycle`, skip this step: the cycle learns once at the end.
 
 ## Orchestrated
 
 The user handed the whole goal to an orchestrator session that passes the design stop itself, like a `/goal` that says "you are the orchestrator" and "fully autonomous". Nobody reviews the design, so nothing is made for a human to look at (Thomas, 2026-11-16: "this is autonomous orchestration, you govern the procedure, no human verification here. so no need the claude design, nobody will review it, I am not reviewing it. so we basically wasting token before").
 
 - Design with `orchestrated`, the way `## Orchestrated` in `dev-designer.md` says: no Claude Design canvas, no `screen-css.py`, no picture sections, questions written for the orchestrator.
-- Step 4 prints nothing in the terminal. `STATUS: needs-decisions` → report back to the orchestrator with the plan's path and stop; its reply is the `answers`.
-- Skip step 6: nobody reads a `/show-plan` view.
-- Skip step 7: there is no reply of the user's to learn from.
+- Step 3 prints nothing in the terminal. `STATUS: needs-decisions` → report back to the orchestrator with the plan's path and stop; its reply is the `answers`.
+- Skip step 5: nobody reads a `/show-plan` view.
+- Skip step 6: there is no reply of the user's to learn from.
 - You are the orchestrator → the brief you hand a designer says `orchestrated`. Read the plan file yourself, run `check-sql-schema.py` on a `## Schema`, answer in one line, like `Q1: A. Q2: B.`, and say go.
   - A schema is yours to approve only when the user's goal gave you that in words, like "you are allowed to design db schema on your own". Otherwise it goes to the user, as `## Database schema` says.
 
@@ -64,7 +63,7 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
 
 - Nothing left to design → write the plan yourself, no designer and no questions. That is when every piece of the picked variant already names the real file and the change, like "swap the zone 1 secret names at `azure-pipeline-ev-entity.yml:160` for a `zone` variable", no question is left, no new library comes in, and no screen is needed beyond the brief's canvas.
   - Use the plan format in `~/.claude/agents/dev-designer.md`, filled from the brief: `## System` from the brief's `## Research: code` pictures, `## Research` as one line pointing at the brief's `## Research: online`, Decisions from `## Decided`, one step per piece with its `## Matrix` row and `## Detail` block, Verification from the ticket's `## Acceptance`, `## Out of scope` from `## Not doing` and `## Later`, and its `Canvas:`.
-  - Set `Status: approved`, go to step 6, and skip step 7.
+  - Set `Status: approved`, go to step 5, and skip step 6.
 - Only the how is left, like which tests cover the change or in what order the files change → design with `ticket`, building on explore by `## Explored first` in `dev-designer.md`.
 - Not explored, and a code restructure → no research agents. Design with `ticket` and `scope: restructure`, reading the code as you go.
   - A restructure stays inside this repo's code, config and docs: it moves, renames or re-wires how the code reads something, with no new screen, no table change and no outside API, like reading a reorganized `config.yml` and `.env`
@@ -72,7 +71,7 @@ A ticket with `## Explored` was explored first: `/dev:0-explore` already researc
   - Why: on that ticket a code researcher took 4 of 18 minutes, then the design re-read the same 6 files, and wrote a 464-line plan in 9 more
 - Not explored, and small → no research agents. Design with `ticket` and `size: small`, reading the code as you go, and write a short plan.
   - Small is the floor the rules set: one repo, no database change, no outside API, no new web screen, and the ticket names nothing on `.claude/risky.md`, like the Snake game on the offload test, which is one file and its tests.
-  - It is only the starting point. Go to the full path when the code shows more (step 4), and a ticket never moves back down.
+  - It is only the starting point. Go to the full path when the code shows more (step 3), and a ticket never moves back down.
   - Why: on the offload test, research took 4.6 minutes and a full design 15.4 more, and wrote 690 lines for 390 lines of code.
 - Not explored → research in parallel first (below), then a full design with `ticket`.
 
@@ -163,11 +162,10 @@ Do not do these by hand; each script is the only way this command does it.
 | Script | Does |
 |---|---|
 | `ticket-source.py` | parse the ticket argument |
-| `orca-card.py <phase>` | move the Orca card |
 | `screen-css.py` | real CSS for the canvas |
 | `check-sql-schema.py <plan>` | check the plan's tables |
 
-All live in `~/.claude/scripts/dev/`. `orca-card.py` changes nothing outside Orca, and `--dry-run` prints what it would run.
+All live in `~/.claude/scripts/dev/`.
 
 ## Cross-References
 

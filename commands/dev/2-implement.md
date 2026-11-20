@@ -14,28 +14,27 @@ You build in this session: read `~/.claude/agents/dev-implementer.md` and follow
    - A path to a plan with `Status: approved` → use it.
    - Requirement text, or a plan still in `draft` → run `/dev:1-design` instead (read `~/.claude/commands/dev/1-design.md` and follow it), then stop. The build starts only when the user runs `/dev:2-implement` on the approved plan.
    - Empty → use the only approved plan in `plan/`, or ask in one line.
-2. Card: `python3 ~/.claude/scripts/dev/orca-card.py implement`
-3. Start the build:
+2. Start the build:
    - The plan has no `Base:` line → add `Base: <git rev-parse HEAD>` under its `Ticket:` line first, or `Base: 4b825dc642cb6eb9a060e54bf8d69288fbee4904` (git's empty tree) in a repo with no commit yet. You commit as you build, so `/dev:3-review` diffs from here: on a branch with no remote, "the merge base with `master`" is the last build commit and the diff comes out empty.
    - `/dev:offload-to-localLLM` was asked for in this session and the plan has no `Offload:` line → add `Offload: local` under its `Ticket:` line first.
    - The plan has `Offload: local` → build it the way `## With another /dev skill` in `~/.claude/commands/dev/offload-to-localLLM.md` says.
    - The plan's `## Repos` lists 2 or more repos that change → build them in the order `## Every repo` below says.
    - One repo → build it with `plan: <path>`.
    - A step adds a backend test file and the repo has the `omega:add-backend-test` skill, like `backend/.claude/commands/omega/add-backend-test.md` in Omega.Next.AIO → start that file with `/omega:add-backend-test <source file>`, so it lands in the right folder with its wiring. The skill is not there, like in any repo that is not Omega → skip this line and write the test the way the repo's own `CLAUDE.md` says.
-4. Check your work.
+3. Check your work.
    - Check the plan with `python3 ~/.claude/scripts/dev/plan-status.py plan/<slug>/plan.md`. Trust its `done` and `left`.
    - Check the change with `openspec status --change <slug> --json`, run in the repo that holds the plan. No change → code was written without a spec. Write the change now, before any more code. A plan with `Size: small` has no change on purpose: skip this check.
-   - `done: true` → step 5.
+   - `done: true` → step 4.
    - `done: false` and no blocker → keep building from the first unticked step.
-   - A real blocker → tell the user the blocker in one sentence, run `orca-card.py blocked`, and stop.
+   - A real blocker → tell the user the blocker in one sentence, and stop.
    - No local database for the plan → ask the user with AskUserQuestion what to do, never pick for them:
      - clone it from dev (Recommended): `localdb.py clone` reads dev once, then everything runs on the copy
      - load a `.sql`, `.bacpac` or `.dacpac` file they give
      - start empty, from the project's own migrations
 
      Then do what they picked, with the `localdb.py` command for it, like `clone .env.dev1 --prefix OMEGA`.
-5. Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: implement` and `plan`. Inside `/dev:full-dev-cycle`, skip this step: the cycle learns once at the end.
-6. Tell the user what now works, with the evidence path, the OpenSpec change path from `CHANGE` when there is one, and the next step: `/dev:3-review plan/<slug>/plan.md`.
+4. Learn the conventions: read `~/.claude/agents/dev-convention-learner.md` and follow it with `phase: implement` and `plan`. Inside `/dev:full-dev-cycle`, skip this step: the cycle learns once at the end.
+5. Tell the user what now works, with the evidence path, the OpenSpec change path from `CHANGE` when there is one, and the next step: `/dev:3-review plan/<slug>/plan.md`.
 
 ## Every repo
 

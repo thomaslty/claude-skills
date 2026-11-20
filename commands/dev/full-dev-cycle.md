@@ -1,6 +1,6 @@
 ---
 name: full-dev-cycle
-description: "Run design → implement → review end to end for one ticket, every phase in this session and only review's reviewers as agents, stopping after design for you. Never starts the build until you say go. After the build it loops review → fix → review by itself until a review finds nothing. Moves the Orca card through the board as it goes. Triggers on /dev:full-dev-cycle, 'run the full cycle', 'do this ticket end to end'. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the Jira ticket Orca linked to this worktree."
+description: "Run design → implement → review end to end for one ticket, every phase in this session and only review's reviewers as agents, stopping after design for you. Never starts the build until you say go. After the build it loops review → fix → review by itself until a review finds nothing. Triggers on /dev:full-dev-cycle, 'run the full cycle', 'do this ticket end to end'. Takes a Jira URL/key, a Notion URL, a ticket file, or plain text; with no argument it uses the Jira ticket Orca linked to this worktree."
 argument-hint: "[Jira URL/key | Notion URL | plan/<slug>/ticket.md | requirement text]"
 ---
 
@@ -33,9 +33,9 @@ Each phase is the command of the same name. Read `~/.claude/commands/dev/<phase>
    - The fixes are the cycle's, never the user's reply. Never write a reply in the user's name: no "fix all" you made up, and no `feedback:` for the learner that the user did not type. On the offload test, a made-up "fix all" became 3 rules marked `human` in `.claude/conventions.md`.
 3. After the go, go on without asking, to `## When done`. Stop early only for a blocker.
 4. Every review after the first reads only what the last fixes changed, the way `/dev:3-review` says. On the offload test, round 2 re-read all 21 files to check 2 fixes, and both bugs it found were in the fixed lines.
-   - Review round 5 still has a finding → that is a blocker: show what is left, run `orca-card.py blocked`, and stop.
+   - Review round 5 still has a finding → that is a blocker: show what is left, and stop.
 5. Never switch branch, never merge. You commit in small batches and push your own feature branch as you build; never ask the user about commits or pushes (Thomas's standing rule, 2026-11-05).
-6. Check the plan with `plan-status.py`, and move the card with `orca-card.py`, never by hand.
+6. Check the plan with `plan-status.py`, never by hand.
 7. Explore, design and review talk in the terminal: print the plan, the questions and the findings there, and take the user's reply as the answer to the questions. Never build or open an HTML page for them.
 8. When the ticket needs another repo, set up its worktree yourself (below) before the next phase. Do not ask the user to make it.
 9. Every phase reads dev as it likes and writes to a local database only, the way "Database: read dev, write local" in `/dev:development-guideline` says. When there is no local database, ask the user what to do, the way `/dev:2-implement` says. Never pick for them.
@@ -83,18 +83,15 @@ Making a new worktree for another repo is allowed. Switching the branch of any e
 
 ## When design is done
 
-1. `python3 ~/.claude/scripts/dev/orca-card.py waiting-decisions`. The card gets the unread dot.
-2. Tell the user in two lines: the plan path with the canvas link when the plan has a `Canvas:` line, and the next step by name: "next: `/dev:2-implement plan/<slug>/plan.md` — say go to run it, or tell me what to change".
+Tell the user in two lines: the plan path with the canvas link when the plan has a `Canvas:` line, and the next step by name: "next: `/dev:2-implement plan/<slug>/plan.md` — say go to run it, or tell me what to change".
 
 ## When done
 
-1. `python3 ~/.claude/scripts/dev/orca-card.py ready`
-2. Learn the conventions yourself: read `~/.claude/agents/dev-convention-learner.md` and follow it, with `phase: cycle`, `plan`, and `feedback:` every reply the user typed in this cycle, verbatim.
-3. The ticket has a `Jira: <KEY>` line → post the same four lines to the issue: `orca jira comment add <KEY> --body-file - --json`. Moving the issue's status is the human's call.
-4. Tell the user in four lines: what now works with the evidence path, what review found and you fixed, like `2 rounds, 1 fixed: cor-1`, the plan path, and the next step, `/dev:finishing-development`.
+1. Learn the conventions yourself: read `~/.claude/agents/dev-convention-learner.md` and follow it, with `phase: cycle`, `plan`, and `feedback:` every reply the user typed in this cycle, verbatim.
+2. The ticket has a `Jira: <KEY>` line → post the same four lines to the issue: `orca jira comment add <KEY> --body-file - --json`. Moving the issue's status is the human's call.
+3. Tell the user in four lines: what now works with the evidence path, what review found and you fixed, like `2 rounds, 1 fixed: cor-1`, the plan path, and the next step, `/dev:finishing-development`.
 
 ## Cross-References
 
-- Tickets on the Orca board → `/dev:ticket`
 - Methodology → `/dev:development-guideline`
 - Landing → `/dev:finishing-development`
